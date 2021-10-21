@@ -48,12 +48,14 @@ Docker-compose is the preferred deployment method
 7.  run *docker-compose up -d*
 
 ### FAQ ###
-- `Warn UNAUTHORIZED`: check step 2-4
-- `Permission denied`: there is a problem with permissions on Linux machines. You have to change permission to 755
+- message `Warn UNAUTHORIZED`: check step 2-4
+- message `Permission denied`: there is a problem with permissions on Linux machines. You have to change permission to 755
   - *chmod -R 755 ./nginx*
   - *chmod -R 755 ./gateway*
   - *chmod -R 755 ./redis*
 - Adapter - in some next revision will be also included generic adapter, which will allow you to interact with items. For now is adapter in *dummy mode*, so it always return same fake value.
+- SSL and basic auth - this can be defined in *nginx.conf* file
+- 
 
 ### Who do I talk to? ###
 
