@@ -1,29 +1,63 @@
-# README #
+# AURORAL_NODE #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+This README documents the node part of AURORAL platform, which is funded by European Union’s Horizon 2020 Framework Programme for Research and Innovation under grant agreement no 101016854 AURORAL.
 
-### What is this repository for? ###
+### Used components ###
+Node contains multiple components:
+- agent
+  - custom component that hande all API requests and contains all logic
+  - required
+- redis
+  - in memory data store used for caching
+  - optional
+- nginx
+  - proxy server handling request redirection to agent
+  - required
+- gateway
+  - java application handling commmunication over XMPP with AURORAL network
+  - required
+- wothive + triplestore
+  - semantic adapter 
+  - optional
+- DLC
+  - blockchain component
+  - optional
+- Adapter
+  - Connection to underlying devices
+  - optional
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+WoT, DLC and adapter are under development and are not enabled or included by default
+  
+### Requirements ###
+- docker
+- docker-compose
+- Architecture: amd64, arm64 or armv7
 
-### How do I get set up? ###
+### Deployment ###
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+Docker-compose is the preferred deployment method
 
-### Contribution guidelines ###
+1. Create new *AP* in AURORAL neighborhood manager 
+2. Create your *.env* configuration file based on *env.example*
+   -  *GTW_ID* from AURORAL neighborhood manager
+   -  *GTW_PWD* defined in AURORAL neighborhood manager
+3.  Update `<identity>` tag in `gateway/GatewayConfig.xml` with your generated *AGID*
+4.  Generate certificate pair with script `./gateway/keystore/genkeys.sh` and copy content of *platform-pubkey.pem* to AURORAL dashboard (key button)
+5.  By default is choosed version *amd64 / arm64*. If you want to run on *armv7*, please change docker images in *docker-compose.yml* file
+6.  Create folders *agent/imports* and *agent/exports*
+7.  run *docker-compose up -d*
 
-* Writing tests
-* Code review
-* Other guidelines
+### FAQ ###
+- `Warn UNAUTHORIZED`: check step 2-4
+- `Permission denied`: there is a problem with permissions on Linux machines. You have to change permission to 755
+  - *chmod -R 755 ./nginx*
+  - *chmod -R 755 ./gateway*
+  - *chmod -R 755 ./redis*
+- Adapter - in some next revision will be also included generic adapter, which will allow you to interact with items. For now is adapter in *dummy mode*, so it always return same fake value.
 
 ### Who do I talk to? ###
 
-* Repo owner or admin
-* Other community or team contact
+Developed by bAvenir
+
+* jorge.almela@bavenir.eu
+* peter.drahovsky@bavenir.eu

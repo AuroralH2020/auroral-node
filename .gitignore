@@ -13,8 +13,17 @@ dist/
 # Compiled Python bytecode
 *.py[cod]
 
+#.env
+.env
+
 # Log files
 *.log
+*/logs/
+*/log/
+
+#gateway
+/gateway/keystore/platform*
+/gateway/data
 
 # Package files
 *.jar
