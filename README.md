@@ -4,34 +4,34 @@ This README documents the node part of AURORAL platform, which is funded by Euro
 
 ### Used components ###
 Node contains multiple components:
-- agent
+- AURORAL agent
   - custom component that hande all API requests and contains all logic
   - required
-- redis
+- Redis
   - in memory data store used for caching
   - optional
-- nginx
+- Nginx
   - proxy server handling request redirection to agent
   - required
-- gateway
+- AURORAL gateway
   - java application handling commmunication over XMPP with AURORAL network
   - required
-- wothive + triplestore
+- Wothive + Triplestore
   - semantic adapter 
   - optional
-- DLC
-  - blockchain component
+- AURORAL DLT Client
+  - Fabric hyperledger client
   - optional
 - Adapter
-  - Connection to underlying devices
+  - Connection to underlying smart infrastructure
   - optional
 
-WoT, DLC and adapter are under development and are not enabled or included by default
+WoT, DLT and adapter are under development and are not enabled or included by default
   
 ### Requirements ###
-- docker
-- docker-compose
-- Architecture: amd64, arm64 or armv7
+- Docker
+- Docker-compose
+- Available architecture images: amd64, arm64 or armv7 (RaspberryPi and similar)
 
 ### Deployment ###
 
@@ -55,7 +55,6 @@ Docker-compose is the preferred deployment method
   - *chmod -R 755 ./redis*
 - Adapter - in some next revision will be also included generic adapter, which will allow you to interact with items. For now is adapter in *dummy mode*, so it always return same fake value.
 - SSL and basic auth - this can be defined in *nginx.conf* file
-- 
 
 ### Who do I talk to? ###
 
