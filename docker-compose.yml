@@ -3,8 +3,8 @@ version: '2.4'
 services:
   auroral-agent:
     container_name: auroral-agent
-    image: registry.bavenir.eu/auroral_agent:dev
-    # image: registry.bavenir.eu/auroral_agent:armv7
+    image: ghcr.io/auroralh2020/auroral-node-agent:beta
+    # image: ghcr.io/auroralh2020/auroral-node-agent:beta_armv7
     volumes:
     - ./.env:/app/.env:ro
     - ./agent:/app/agent
@@ -40,7 +40,8 @@ services:
     - GID=9999
     # ports:
     # - 8181:8181
-    image: registry.bavenir.eu/auroral_gateway:dev
+    image: ghcr.io/auroralh2020/auroral-gateway:beta
+    # image: ghcr.io/auroralh2020/auroral-gateway:beta_armv7
   cache-db:
     container_name: cache-db
     # restart: always

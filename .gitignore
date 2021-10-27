@@ -3,6 +3,10 @@
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
+# Data folders
+gateway/data
+redis/data
+
 # Node artifact files
 node_modules/
 dist/
@@ -17,6 +21,10 @@ dist/
 .env
 
 # Log files
+logs
+log
+gateway/log*
+nginx/log*
 *.log
 */logs/
 */log/
