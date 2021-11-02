@@ -1,3 +1,4 @@
+cd $(dirname $0)
 # HOW TO - Generate Private/Key pair to authenticate your gateway
 
 # Generate your RSA private key
