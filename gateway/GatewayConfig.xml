@@ -475,7 +475,7 @@
 			<!--
 			AGID of the Access Point used to authenticate the gateway (AGID string)
 			-->
-			{your-agid-here}
+			{YOUR-AGID}
 		</identity>
 		<ttl>
 			<!--

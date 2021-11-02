@@ -28,7 +28,17 @@ WoT, DLT and adapter are under development and are not enabled or included by de
 - Docker-compose
 - Available architecture images: amd64, arm64 or armv7 (RaspberryPi and similar)
 
+### Launcher script ###
+
+**Available for MAC and Linux**
+
+In order to facilitate the installation of the node we are providing an interactive script to go over the process. This scripts enables the user to initialize, just run or remove all the node files when no longer needed.
+
+The launcher does not configure any adapter at the moment, see section 7 of deployment section.
+
 ### Deployment ###
+
+The node can be configured and run following the instructions below:
 
 Docker-compose is the preferred deployment method
 
@@ -47,7 +57,22 @@ Docker-compose is the preferred deployment method
     - mkdir agent
     - mkdir imports exports
     - Necessary backup and restore functionality using filesystem.
-7.  run *docker-compose up -d*
+7.  Configure an adapter: By default the agent uses dummy response mode unless an adapter is configured.
+    - Change the adapter mode in the .env file to 'proxy'
+    - Add the host and port of your adapter in .env
+    - All future requests will be redirected to: 
+    - http://host:port/api/properties/oid/pid
+    - Is up to the user to develop/configure the adapter
+8.  Run *docker-compose up -d*
+
+### Coming up ###
+
+- Security: Basic authentication to access the Node API
+- Security: Provide instructions to connect the API over HTTPS
+- Verticals: Semantic adapters
+- Verticals: Other third party examples
+- Horizontals: Service and marketplace integration
+- Support: Script to initialize Node in Windows
 
 ### FAQ ###
 

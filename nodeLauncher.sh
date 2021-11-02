@@ -1,12 +1,13 @@
 #!/bin/bash
 cd $(dirname $0)
 USAGE="$(basename "$0") [ -h ] [ -e env ]
--- AP initialisation script 
+-- AP initialisation script
+-- Run without parameters for basic initialization
 -- Flags:
-      -h  shows help
-      -r  reset AP
-      -d run non daemon mode
-      -s stop docker-compose"
+      -h  Shows help
+      -r  Reset Node
+      -i  Run interactive mode
+      -s  Stop Node"
 
 # Configuration
 ENV_FILE=".env"
@@ -23,12 +24,12 @@ SIMPLE=0
 
 # Functions
 
-# print text in blue color
+# Print text in blue color
 echoBlue () {
   echo -e "\033[1;34m$@\033[0m"
 }
 
-# print text in yellow color
+# Print text in yellow color
 echoWarn () {
   echo -e "\033[1;33m$@\033[0m"
 }
@@ -105,13 +106,13 @@ fillGatewayConfig () {
 
 # Asks and run the APP with docker-compose
 runAp () {
-getYesNOanswer 'Run AP now?' ;
+getYesNOanswer 'Run Node now?' ;
   if [ $? == "1" ]; then
     if [ $DAEMON == "0" ]; then
-    echoBlue "Starting AP (-d)"
+    echoBlue "Starting Node (-d)"
       docker-compose up -d
     else
-    echoBlue "Starting AP"
+    echoBlue "Starting Node"
      docker-compose up
     fi
   else
@@ -120,17 +121,17 @@ getYesNOanswer 'Run AP now?' ;
   fi
 }
 
-# Stops the APPwith docker-compose
+# Stops the APP with docker-compose
 stopAP () {
   echoBlue 'Stopping' 
   docker-compose down
   exit 0
 }
 testDependencies () {
-  # for all given parameters
+  # For all given parameters
   for i in "$@"
   do
-    # test 'param' -v answer
+    # Test 'param' -v answer
     eval "$i -v"  > /dev/null 2>&1
     if [ $? != 0 ]; then
       # if error, exit
@@ -149,11 +150,11 @@ if [ $MACHINE == 'Linux' ]; then
   fi
 }
 
-# removes all edited files and create clean node
+# Removes all edited files and create clean node
 resetInstance () {
-  # removing all settings
+  # Removing all settings
   echo "-r RESET AP";
-  getYesNOanswer "Are you sure?";
+  getYesNOanswer "Are you sure you want to remove all node files?";
   if [ $? != 1 ]; then
       echo "Aborting..";
       return 
@@ -165,28 +166,28 @@ resetInstance () {
   rm  "./gateway/keystore/platform-pubkey.der" > /dev/null 2>&1
   rm  "./gateway/keystore/platform-pubkey.pem" > /dev/null 2>&1
   rm  "./gateway/keystore/ogwapi-token" > /dev/null 2>&1
-  rm  "./gateway/log/*" > /dev/null 2>&1
+  rm  -rf "./gateway/log" > /dev/null 2>&1
   # NGINX
-  rm  "./gateway/logs/*" > /dev/null 2>&1
+  rm  -rf "./gateway/logs" > /dev/null 2>&1
   # REDIS data
   rm -rf "./redis/data" > /dev/null 2>&1
   # .env
   rm ".env" > /dev/null 2>&1
-  echo "AP instance initialised"
+  echo "Node instance deleted... Please remove your Access Point credentials in AURORAL website if no longer needed"
   exit 0
 }
 
-# run genKeys.sh
+# Run genKeys.sh -- Get pub/priv keys
 generateCertificates () {
   # run script to generate certs
   echo "Generating certificates"
   bash ./gateway/keystore/genkeys.sh > /dev/null 2>&1
   # display pubkey and ask to copy 
-  echo "Please copy this public key to AP settings in AURORAL NM:"
-  echo -e "\033[1;92m $(cat ./gateway/keystore/platform-pubkey.pem)\033[0m"
+  echo "Please copy this public key to Access Point settings in AURORAL website:"
+  echo -e "\033[1;92m$(cat ./gateway/keystore/platform-pubkey.pem)\033[0m"
 }
 
-# detects Machine
+# Detects Machine OS
 getMachine () {
   unameOut="$(uname -s)"
   case "${unameOut}" in
@@ -200,7 +201,7 @@ getMachine () {
 }
 
 # Get opts
-while getopts 'hdrs' OPTION; do
+while getopts 'hirs' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
@@ -208,7 +209,7 @@ while getopts 'hdrs' OPTION; do
        exit0;;
     r) resetInstance; 
        exit 0;;
-    d) DAEMON=1;;
+    i) DAEMON=1;;
   esac 
 done
 
@@ -227,7 +228,7 @@ fi
 # Get users machine
 getMachine
 
-# testPermissions
+# Test Permissions
 testPermissions
 
 # Create .env file
@@ -245,30 +246,30 @@ editEnvFile "NODE_ENV";
 # Wot
 getYesNOanswer 'Enable Wot?' ; editEnvFile "WOT_ENABLED" $?
 # DB caching
-getYesNOanswer 'Enable DB cache?' ; editEnvFile "DB_CACHE_ENABLED" $?
+getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
 
-# EXTERNAL PORT
+# Change External Port
 getYesNOanswer 'Use default external port? (81)' ;
 if [ $? == 0 ]; then
   getTextAnswer "Please specify the external port:" "";
   editEnvFile "EXTERNAL_PORT";
 fi;
 
-# AP id + pasword
-echo "Now please register new AP in AURORAL NM: $AURORAL_NM_URL, in section 'Access points'"
+# Node agid + pasword
+echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in section 'Access points'"
 getTextAnswer "Please insert generated AGID:" "36"; AGID=$TMP; editEnvFile "GTW_ID" 
-getTextAnswer "Please insert AP password:" ""; editEnvFile "GTW_PWD" 
+getTextAnswer "Please insert Node password:" ""; editEnvFile "GTW_PWD" 
 
-#fill GatewayConfig.xml
+# Fill GatewayConfig.xml
 fillGatewayConfig $AGID
 
-#Genereate certificates
+# Genereate certificates
 generateCertificates
 getTextAnswer "Hit enter after done" "";
 
 # TBD
 #security
 
-# start AP
-echoBlue 'Initialisation completed' 
+# Start Node
+echoBlue 'Node initialisation completed' 
 runAp
