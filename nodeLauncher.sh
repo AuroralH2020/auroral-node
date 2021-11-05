@@ -1,7 +1,7 @@
 #!/bin/bash
 cd $(dirname $0)
 USAGE="$(basename "$0") [ -h ] [ -e env ]
--- AP initialisation script
+-- AP initialisation script 
 -- Run without parameters for basic initialization
 -- Flags:
       -h  Shows help
@@ -18,9 +18,9 @@ DEPENDENCIES=("docker" "docker-compose" "perl")
 AGID=""
 TMP=""
 DAEMON=0
-MACHINE=
+MACHINE=''
+ARCH=''
 # VARIABLES
-SIMPLE=0
 
 # Functions
 
@@ -56,7 +56,9 @@ getTextAnswer () {
   # wait for answer and store it to TMP
   read TMP
   # if size is defined (second argument)
-  if [ -z ${2+x} ]; then 
+  if [ -z "$2" ]; then 
+    return
+  else
     # Check size and repeat
     while  [[ ${#TMP} != $2 ]]; do
     echo -n -e "\033[1;31mIncorrect length. $1\033[0m"
@@ -167,6 +169,9 @@ resetInstance () {
   rm  "./gateway/keystore/platform-pubkey.pem" > /dev/null 2>&1
   rm  "./gateway/keystore/ogwapi-token" > /dev/null 2>&1
   rm  -rf "./gateway/log" > /dev/null 2>&1
+  # Docker-compose
+  rm  "./docker-compose.yml" > /dev/null 2>&1
+
   # NGINX
   rm  -rf "./gateway/logs" > /dev/null 2>&1
   # REDIS data
@@ -200,6 +205,19 @@ getMachine () {
   MACHINE=${machine}
 }
 
+# detects Machine architecture
+getArch () {
+  archOut="$(uname -m)"
+  case "${archOut}" in
+      armv7l*)     arch=armv7;;
+      arm64*)      arch=amd64;;
+      x86_64*)     arch=x86_64;;
+      amd64*)      arch=arm64;;
+      *)           echoWarn "Unknown architecture (${archOut}). Choosing amd64 image"; arch="amd64"
+  esac
+  ARCH=${arch}
+}
+
 # Get opts
 while getopts 'hirs' OPTION; do
   case "$OPTION" in 
@@ -227,6 +245,15 @@ fi
 
 # Get users machine
 getMachine
+getArch
+
+# choose docker-compose file
+if [ ARCH != 'armv7' ]; then
+  cp ./docker-compose/docker-compose.yml ./docker-compose.yml
+else
+  cp ./docker-compose/docker-compose.armv7.yml ./docker-compose.yml
+fi
+
 
 # Test Permissions
 testPermissions
