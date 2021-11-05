@@ -248,9 +248,9 @@ getArch
 
 # choose docker-compose file
 if [ ARCH != 'armv7' ]; then
-  cp ./docker-compose/docker-compose.armv7.yml ./docker-compose.yml
-else
   cp ./docker-compose/docker-compose.yml ./docker-compose.yml
+else
+  cp ./docker-compose/docker-compose.armv7.yml ./docker-compose.yml
 fi
 
 
