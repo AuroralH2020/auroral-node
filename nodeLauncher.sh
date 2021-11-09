@@ -83,8 +83,14 @@ editEnvFile () {
       local value="false"
     fi
   fi
-  # edit env file and save to ENV_BACKUP
-  sed "s/$1=.*/$1=\"$value\"/" $ENV_FILE > "$ENV_BACKUP"
+  # if number do not quote
+  if [ -n "$value" ] && [ "$value" -eq "$value" ] 2>/dev/null; then
+   # edit env file and save to ENV_BACKUP
+   sed "s/$1=.*/$1=$value/" $ENV_FILE > "$ENV_BACKUP"
+  else
+    # edit env file and save to ENV_BACKUP
+    sed "s/$1=.*/$1=\"$value\"/" $ENV_FILE > "$ENV_BACKUP"
+  fi
   # move backup to env file
   cat "$ENV_BACKUP" > "$ENV_FILE"
   # rm backup file
@@ -188,7 +194,7 @@ generateCertificates () {
   echo "Generating certificates"
   bash ./gateway/keystore/genkeys.sh > /dev/null 2>&1
   # display pubkey and ask to copy 
-  echo "Please copy this public key to Access Point settings in AURORAL website:"
+  echoBlue "Please copy this public key to Access Point settings in AURORAL website:"
   echo -e "\033[1;92m$(cat ./gateway/keystore/platform-pubkey.pem)\033[0m"
 }
 

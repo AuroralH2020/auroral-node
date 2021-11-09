@@ -94,13 +94,18 @@ WoT, DLT and adapter are under development and are not enabled or included by de
 
 - message `Warn UNAUTHORIZED`: check step 2-4
 - message `Permission denied`: there is a problem with permissions on Linux machines. You have to change permission to 755
-  - *chmod -R 755 ./nginx*
-  - *chmod -R 755 ./gateway*
-  - *chmod -R 755 ./redis*
+  - *chmod -R 777 ./nginx*
+  - *chmod -R 777 ./gateway*
+  - *chmod -R 777 ./redis*
 - Adapter - You can run the agent in proxy mode or dummy mode.
     - Dummy - Agent will respond consumption requests with some automated random value. Use for testing.
     - Proxy - Agent will redirect the consumption requests to the host specified in the configuration file .env. In future versions we will include adapters developed in AURORAL and how to run them alongside the node. 
+    - Semantic - Agent will use the URL specified in thing description for feach interaction pattern
 - SSL and basic auth - This can be set-up in *nginx.conf* file. In future versions we will include instructions to configure the access to the node with additional security. Certificates are necessary to configure the SSL connections.
+- It is possible to address host machine in adapter with dns record 'myhost'
+- There is a public Wothive test server that can be used. For using you have to change these variables in .env file:
+  - WOT_HOST="https://wothive.linkeddata.es"
+  - WOT_PORT=443
 
 ### Who do I talk to? ###
 
