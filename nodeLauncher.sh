@@ -6,6 +6,7 @@ USAGE="$(basename "$0") [ -h ] [ -e env ]
 -- Flags:
       -h  Shows help
       -r  Reset Node
+      -u  Update  images
       -i  Run interactive mode
       -s  Stop Node"
 
@@ -14,7 +15,7 @@ ENV_FILE=".env"
 ENV_EXAMPLE="env.example"
 ENV_BACKUP="env.edit"
 AURORAL_NM_URL="https://auroral.dev.bavenir.eu/nm/#!/myNodes"
-DEPENDENCIES=("docker" "docker-compose" "perl")
+DEPENDENCIES=("docker" "docker-compose" "perl" )
 AGID=""
 TMP=""
 DAEMON=0
@@ -114,6 +115,10 @@ fillGatewayConfig () {
 
 # Asks and run the APP with docker-compose
 runAp () {
+  checkIfRunning
+  if [ $? == "1" ]; then
+    return
+  fi
 getYesNOanswer 'Run Node now?' ;
   if [ $? == "1" ]; then
     if [ $DAEMON == "0" ]; then
@@ -158,34 +163,11 @@ if [ $MACHINE == 'Linux' ]; then
   fi
 }
 
-# Removes all edited files and create clean node
-resetInstance () {
-  # Removing all settings
-  echo "-r RESET AP";
-  getYesNOanswer "Are you sure you want to remove all node files?";
-  if [ $? != 1 ]; then
-      echo "Aborting..";
-      return 
-  fi
-  # Gateway data
-  rm -rf "./gateway/data" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-key.der" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-key.pem" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-pubkey.der" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-pubkey.pem" > /dev/null 2>&1
-  rm  "./gateway/keystore/ogwapi-token" > /dev/null 2>&1
-  rm  -rf "./gateway/log" > /dev/null 2>&1
-  # Docker-compose
-  rm  "./docker-compose.yml" > /dev/null 2>&1
-
-  # NGINX
-  rm  -rf "./gateway/logs" > /dev/null 2>&1
-  # REDIS data
-  rm -rf "./redis/data" > /dev/null 2>&1
-  # .env
-  rm ".env" > /dev/null 2>&1
-  echo "Node instance deleted... Please remove your Access Point credentials in AURORAL website if no longer needed"
-  exit 0
+# disable running node
+disableNode () {
+  echoBlue "Disabling node"
+  docker-compose down
+  echoBlue "Done"
 }
 
 # Run genKeys.sh -- Get pub/priv keys
@@ -224,8 +206,77 @@ getArch () {
   ARCH=${arch}
 }
 
+#check if docker-compose is running
+checkIfRunning () {
+  SERVICES=$(docker-compose ps -q | wc -l )
+  if [ $SERVICES != "0" ]; then
+    echoBlue "Node is already running"
+    return 1
+  else
+    echo 'Node is disabled '
+    return 0
+  fi
+}
+
+# update images and restart
+updateImages () {
+  checkIfRunning
+  if [ $? == 1 ]; then 
+    disableNode
+  else 
+    echo "node offline"
+  fi
+ echoBlue "Updating images"
+ docker-compose pull
+ runAp
+ exit
+}
+
+# Test if already initialised
+checkIfInitialised () {
+  if [[ -f ".env" ]]; then
+    return 1
+    # echoBlue "If you want to reset initialisation, run with -r parameter"
+  fi
+  return 0
+}
+
+# Removes all edited files and create clean node
+resetInstance () {
+  # Removing all settings
+  echo "-r RESET AP";
+  getYesNOanswer "Are you sure you want to remove all node files?";
+  if [ $? != 1 ]; then
+      echo "Aborting..";
+      return 
+  fi
+  checkIfInitialised
+   if [ $? == 1 ]; then
+    disableNode
+  fi
+  # Gateway data
+  rm -rf "./gateway/data" > /dev/null 2>&1
+  rm  "./gateway/keystore/platform-key.der" > /dev/null 2>&1
+  rm  "./gateway/keystore/platform-key.pem" > /dev/null 2>&1
+  rm  "./gateway/keystore/platform-pubkey.der" > /dev/null 2>&1
+  rm  "./gateway/keystore/platform-pubkey.pem" > /dev/null 2>&1
+  rm  "./gateway/keystore/ogwapi-token" > /dev/null 2>&1
+  rm  -rf "./gateway/log" > /dev/null 2>&1
+  # Docker-compose
+  rm  "./docker-compose.yml" > /dev/null 2>&1
+
+  # NGINX
+  rm  -rf "./gateway/logs" > /dev/null 2>&1
+  # REDIS data
+  rm -rf "./redis/data" > /dev/null 2>&1
+  # .env
+  rm ".env" > /dev/null 2>&1
+  echo "Node instance deleted... Please remove your Access Point credentials in AURORAL website if no longer needed"
+  exit 0
+}
+
 # Get opts
-while getopts 'hirs' OPTION; do
+while getopts 'hirsu' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
@@ -234,6 +285,8 @@ while getopts 'hirs' OPTION; do
     r) resetInstance; 
        exit 0;;
     i) DAEMON=1;;
+    u) updateImages;
+       exit 0;;
   esac 
 done
 
@@ -242,9 +295,9 @@ done
 testDependencies "${DEPENDENCIES[@]}"
 
 # Test if already initialised
-if [[ -d "./redis/data" ]]; then
+checkIfInitialised
+if [ $? == 1 ]; then 
   echoBlue "Already initialised."
-  # echoBlue "If you want to reset initialisation, run with -r parameter"
   runAp
   exit
 fi

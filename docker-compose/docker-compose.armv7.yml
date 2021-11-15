@@ -2,6 +2,7 @@ version: '2.4'
 
 services:
   auroral-agent:
+    restart: always
     # image: ghcr.io/auroralh2020/auroral-node-agent:beta
     image: ghcr.io/auroralh2020/auroral-node-agent:beta_armv7
     volumes:
@@ -28,7 +29,7 @@ services:
       # - 443:443
     image: nginx:stable
   gateway:
-    # restart: always
+    restart: always
     volumes:
     - ./gateway/log:/gateway/log
     - ./gateway/data:/gateway/data
@@ -42,7 +43,7 @@ services:
     # image: ghcr.io/auroralh2020/auroral-gateway:beta
     image: ghcr.io/auroralh2020/auroral-gateway:beta_armv7
   cache-db:
-    # restart: always
+    restart: always
     # ports:
     # - 6379:6379
     volumes:
