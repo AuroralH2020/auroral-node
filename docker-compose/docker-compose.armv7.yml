@@ -59,9 +59,13 @@ services:
     image: redis:buster
   # triplestore:
   #   image: acimmino/helio-cloud-rdf4jstore:latest
+  #   volumes:
+  #    - ./triplestore:/usr/src/helio-cloud-rdf4jstore/rdf4j
   #   ports:
   #     - '4567:4567'
   # wothive:
   #   image: acimmino/wot-hive:latest
+  #   volumes:
+  #    - ./wothive/configuration.json:/usr/src/wothive/configuration.json
   #   ports:
   #     - '9000:9000'
