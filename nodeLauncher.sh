@@ -8,7 +8,9 @@ USAGE="$(basename "$0") [ -h ] [ -e env ]
       -r  Reset Node
       -u  Update  images
       -i  Run interactive mode
-      -s  Stop Node"
+      -s  Stop Node
+      -a  <username> add auth user
+      -d  <username> delete auth user " 
 
 # Configuration
 ENV_FILE=".env"
@@ -56,6 +58,28 @@ getTextAnswer () {
   echo -n -e "\033[1;34m$1\033[0m"
   # wait for answer and store it to TMP
   read TMP
+  # if size is defined (second argument)
+  if [ -z "$2" ]; then 
+    return
+  else
+    # Check size and repeat
+    while  [[ ${#TMP} != $2 ]]; do
+    echo -n -e "\033[1;31mIncorrect length. $1\033[0m"
+    read TMP
+    done
+  fi
+}
+
+# Displays dialog and return given text in TMP 
+getTextPasswordAnswer () {
+  TMP=''
+  # write question
+  echo -n -e "\033[1;34m$1\033[0m"
+  # wait for answer and store it to TMP
+  stty_orig=$(stty -g)
+  stty -echo
+  read TMP
+  stty $stty_orig
   # if size is defined (second argument)
   if [ -z "$2" ]; then 
     return
@@ -232,6 +256,22 @@ updateImages () {
  exit
 }
 
+# generate credentials in md5 and store them in .htpasswd file
+addAuthUser () {
+  echo "Adding user"
+  getTextPasswordAnswer "Password for user ${username}:\n";
+  password="${TMP}";
+  printf "${username}:$(openssl passwd -apr1 ${password})\n"  >> ./nginx/.htpasswd
+  echoBlue "User credentials stored"
+}
+
+# remove line containing $username in .htpasswd file
+deleteAuthUser () {
+  echo "Deleting  user"
+  sed -i.bak "/${username}/d" ./nginx/.htpasswd 
+  rm ./nginx/.htpasswd.bak
+}
+
 # Test if already initialised
 checkIfInitialised () {
   if [[ -f ".env" ]]; then
@@ -261,6 +301,8 @@ resetInstance () {
   rm  "./gateway/keystore/platform-pubkey.der" > /dev/null 2>&1
   rm  "./gateway/keystore/platform-pubkey.pem" > /dev/null 2>&1
   rm  "./gateway/keystore/ogwapi-token" > /dev/null 2>&1
+  rm "./nginx/.htpasswd" > /dev/null 2>&1
+  touch "./nginx/.htpasswd" > /dev/null 2>&1
   rm  -rf "./gateway/log" > /dev/null 2>&1
   # Docker-compose
   rm  "./docker-compose.yml" > /dev/null 2>&1
@@ -276,7 +318,7 @@ resetInstance () {
 }
 
 # Get opts
-while getopts 'hirsu' OPTION; do
+while getopts 'hirsua:d:' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
@@ -286,6 +328,12 @@ while getopts 'hirsu' OPTION; do
        exit 0;;
     i) DAEMON=1;;
     u) updateImages;
+       exit 0;;
+    a) username=$OPTARG;
+       addAuthUser;
+       exit 0;;
+    d) username=$OPTARG;
+       deleteAuthUser;
        exit 0;;
   esac 
 done
@@ -306,11 +354,10 @@ fi
 getMachine
 getArch
 
+DOCKER_FILENAME='./docker-compose/docker-compose'
 # choose docker-compose file
-if [ ${ARCH} != 'armv7' ]; then
-  cp ./docker-compose/docker-compose.yml ./docker-compose.yml
-else
-  cp ./docker-compose/docker-compose.armv7.yml ./docker-compose.yml
+if [ ${ARCH} == 'armv7' ]; then
+ DOCKER_FILENAME="${DOCKER_FILENAME}.armv7"
 fi
 
 
@@ -330,7 +377,12 @@ fi
 editEnvFile "NODE_ENV";
 
 # Wot
-getYesNOanswer 'Enable Wot?' ; editEnvFile "WOT_ENABLED" $?
+getYesNOanswer 'Enable Wot?'; 
+if [ $? == 1 ]; then 
+  editEnvFile "WOT_ENABLED" 1
+  DOCKER_FILENAME="${DOCKER_FILENAME}.wot"
+fi 
+
 # DB caching
 getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
 
@@ -352,6 +404,26 @@ fillGatewayConfig $AGID
 # Genereate certificates
 generateCertificates
 getTextAnswer "Hit enter after done" "";
+
+# Auth
+getYesNOanswer 'Enable Basic authentification and ssl?'; 
+if [ $? == 1 ]; then 
+  BASIC_AUTH=1
+  DOCKER_FILENAME="${DOCKER_FILENAME}.auth"
+  mkdir ./nginx/cert > /dev/null 2>&1
+  echoBlue 'Generating self signed certificate'; 
+  openssl req -x509 -nodes -days 1825 -newkey rsa:2048 -subj "/C=GB/ST=London/L=London/O=Global Security/OU=Auroral Agent/CN=auroral-agent.local" -keyout ./nginx/cert/nginx-selfsigned.key -out nginx/cert/nginx-selfsigned.crt > /dev/null 2>&1
+  echoBlue '...done'; 
+  getYesNOanswer 'Do you want to add credentials for first user?'; 
+  if [ $? == 1 ]; then 
+    getTextAnswer "Username:"; 
+    username=$TMP
+    addAuthUser;
+  fi 
+fi 
+
+echo "Choosing ${DOCKER_FILENAME}.yml"
+cp "${DOCKER_FILENAME}.yml" ./docker-compose.yml
 
 # TBD
 #security
