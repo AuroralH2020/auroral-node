@@ -355,10 +355,12 @@ getMachine
 getArch
 
 DOCKER_FILENAME='./docker-compose/docker-compose'
+
 # choose docker-compose file
-if [ ${ARCH} == 'armv7' ]; then
- DOCKER_FILENAME="${DOCKER_FILENAME}.armv7"
-fi
+# Not necessary after docker multiarch image
+# if [ ${ARCH} == 'armv7' ]; then
+#  DOCKER_FILENAME="${DOCKER_FILENAME}.armv7"
+# fi
 
 
 # Test Permissions
