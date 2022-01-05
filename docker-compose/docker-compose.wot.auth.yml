@@ -4,7 +4,6 @@ services:
   auroral-agent:
     restart: always
     image: ghcr.io/auroralh2020/auroral-node-agent:beta
-    # image: ghcr.io/auroralh2020/auroral-node-agent:beta_armv7
     volumes:
     - ./.env:/app/.env:ro
     - ./agent:/app/agent
@@ -43,7 +42,6 @@ services:
     # ports:
     # - 8181:8181
     image: ghcr.io/auroralh2020/auroral-gateway:beta
-    # image: ghcr.io/auroralh2020/auroral-gateway:beta_armv7
   cache-db:
     restart: always
     # ports:
