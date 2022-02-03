@@ -177,13 +177,24 @@ testDependencies () {
     fi
   done
 }
+createFolders () {
+  mkdir ./agent > /dev/null 2>&1
+  mkdir ./agent/exports > /dev/null 2>&1
+  mkdir ./agent/imports > /dev/null 2>&1
+  mkdir ./gateway/data  > /dev/null 2>&1
+  mkdir ./gateway/log   > /dev/null 2>&1
+  mkdir ./nginx/logs    > /dev/null 2>&1
+  mkdir ./redis/data    > /dev/null 2>&1
+}
 
 #display warning if running on Linux
 testPermissions () {
 if [ $MACHINE == 'Linux' ]; then
-    echoWarn "You are running on linux. If you are experiencing permissions problems change folders permission:\n \
-    chmod -R 777 ./gateway \n \
-    chmod -R 777 ./redis"
+    echoWarn "You are running on linux - setting permissions to 777"
+    chmod -R 777 nginx   > /dev/null 2>&1
+    chmod -R 777 redis   > /dev/null 2>&1
+    chmod -R 777 gateway > /dev/null 2>&1
+    chmod -R 777 agent   > /dev/null 2>&1
   fi
 }
 
@@ -363,8 +374,6 @@ DOCKER_FILENAME='./docker-compose/docker-compose'
 # fi
 
 
-# Test Permissions
-testPermissions
 
 # Create .env file
 cp $ENV_EXAMPLE $ENV_FILE
@@ -429,6 +438,13 @@ cp "${DOCKER_FILENAME}.yml" ./docker-compose.yml
 
 # TBD
 #security
+
+# create folders for NGINX AGENT GATEWAY and REDIS
+createFolders
+
+# fix if linux
+testPermissions
+
 
 # Start Node
 echoBlue 'Node initialisation completed' 
