@@ -47,12 +47,12 @@ services:
     image: acimmino/auroral-fuseky:latest
     volumes:
      - aur_triplestore:/fuseki
-    ports:
-      - '4567:4567'
+    # ports:
+    #   - '4567:4567'
   wothive:
     image: acimmino/wot-hive:latest
-    ports:
-      - '9000:9000'
+    # ports:
+    #   - '9000:9000'
 volumes:
   aur_triplestore:
   aur_gateway:
