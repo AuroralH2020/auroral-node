@@ -1,18 +1,23 @@
 #!/bin/bash
 cd $(dirname $0)
+
+#----------------------------------------------------------
+# Help
 USAGE="$(basename "$0") [ -h ] [ -e env ]
 -- AP initialisation script 
 -- Run without parameters for basic initialization
 -- Flags:
       -h  Shows help
-      -r  Reset Node
+      -r  Reset Node instance
       -u  Update  images
       -i  Run interactive mode
       -s  Stop Node
-      -a  <username> add auth user
-      -d  <username> delete auth user " 
-
+      -b  Backup node
+      -a  Apply backup
+     " 
+#----------------------------------------------------------
 # Configuration
+
 ENV_FILE=".env"
 ENV_EXAMPLE="env.example"
 ENV_BACKUP="env.edit"
@@ -23,8 +28,8 @@ TMP=""
 DAEMON=0
 MACHINE=''
 ARCH=''
-# VARIABLES
 
+#----------------------------------------------------------
 # Functions
 
 # Print text in blue color
@@ -70,7 +75,7 @@ getTextAnswer () {
   fi
 }
 
-# Displays dialog and return given text in TMP 
+# Displays password dialog and return given text in TMP 
 getTextPasswordAnswer () {
   TMP=''
   # write question
@@ -125,45 +130,70 @@ editEnvFile () {
 # Search for identity tag and replace with given value
 # param: AGID
 fillGatewayConfig () {
-  #change AGID
-  XML="./gateway/GatewayConfig.xml" 
-  XML_BACKUP="./gateway/GatewayConfig.xml.edited" 
-  NEW_IDENTITY="<identity>
-			<!--
-			AGID of the Access Point used to authenticate the gateway \(AGID string\)
-			-->
-			$1
-		<\/identity>"
-  perl -i  -0pe "s/<identity>.*<\/identity>/$NEW_IDENTITY/gms" gateway/GatewayConfig.xml
+  docker-compose run  --rm --entrypoint "/bin/bash  -c ' cd /gateway/config/ && ./fillAgid.sh ${AGID}'" gateway
 }
 
 # Asks and run the APP with docker-compose
-runAp () {
+startAP () {
   checkIfRunning
   if [ $? == "1" ]; then
     return
   fi
-getYesNOanswer 'Run Node now?' ;
-  if [ $? == "1" ]; then
-    if [ $DAEMON == "0" ]; then
+  if [ $DAEMON == "0" ]; then
     echoBlue "Starting Node (-d)"
       docker-compose up -d
     else
     echoBlue "Starting Node"
      docker-compose up
     fi
-  else
-    echoBlue "Bye "
-    exit
-  fi
 }
 
 # Stops the APP with docker-compose
 stopAP () {
   echoBlue 'Stopping' 
   docker-compose down
+}
+
+askAndStartAP() {
+  getYesNOanswer 'Run Node now?' ;
+  if [ $? == "1" ]; then
+  startAP
+  else
+    echoBlue "Bye "
+    exit
+  fi
+}
+
+backupAP () {
+  echoBlue 'Backing up' 
+  echoBlue 'Starting NODE' 
+  startAP
+  CONTAINERS=$(docker-compose ps -q)
+  VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
+  # TODO redis, gateway, triplestore + env
+  docker run --rm -ti  $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar cvf /backup/node_backup.tar /data /gateway /fuseki /backup/.env'
+  echoBlue 'Stopping NODE' 
+  stopAP
+  echoBlue 'Done' 
   exit 0
 }
+
+restoreAP () {
+  echo "RestoreAP"
+  #Copy env file
+  cp $ENV_EXAMPLE $ENV_FILE
+  startAP
+  # get containers IDs
+  CONTAINERS=$(docker-compose ps -q)
+  VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
+  #restore backup
+  docker run --rm -ti $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar -xvf /backup/node_backup.tar '
+  echoBlue 'Done' 
+  echoBlue 'Stopping NODE' 
+  stopAP
+}
+
+# check if dependencies are installed
 testDependencies () {
   # For all given parameters
   for i in "$@"
@@ -177,42 +207,25 @@ testDependencies () {
     fi
   done
 }
-createFolders () {
-  mkdir ./agent > /dev/null 2>&1
-  mkdir ./agent/exports > /dev/null 2>&1
-  mkdir ./agent/imports > /dev/null 2>&1
-  mkdir ./gateway/data  > /dev/null 2>&1
-  mkdir ./gateway/log   > /dev/null 2>&1
-  mkdir ./nginx/logs    > /dev/null 2>&1
-  mkdir ./redis/data    > /dev/null 2>&1
-}
-
-#display warning if running on Linux
-testPermissions () {
-if [ $MACHINE == 'Linux' ]; then
-    echoWarn "You are running on linux - setting permissions to 777"
-    chmod -R 777 nginx   > /dev/null 2>&1
-    chmod -R 777 redis   > /dev/null 2>&1
-    chmod -R 777 gateway > /dev/null 2>&1
-    chmod -R 777 agent   > /dev/null 2>&1
-  fi
-}
-
-# disable running node
-disableNode () {
-  echoBlue "Disabling node"
-  docker-compose down
-  echoBlue "Done"
-}
 
 # Run genKeys.sh -- Get pub/priv keys
 generateCertificates () {
   # run script to generate certs
   echo "Generating certificates"
-  bash ./gateway/keystore/genkeys.sh > /dev/null 2>&1
+  PUBKEY=$(docker-compose run  --rm --entrypoint "/bin/bash -c 
+  'cd  /gateway/keystore && 
+   ./genkeys.sh > /dev/null 2>&1  && 
+   cat platform-pubkey.pem '" gateway)
   # display pubkey and ask to copy 
   echoBlue "Please copy this public key to Access Point settings in AURORAL website:"
-  echo -e "\033[1;92m$(cat ./gateway/keystore/platform-pubkey.pem)\033[0m"
+  PUBKEY="\033[1;92m${PUBKEY}\033[0m"
+  echo  -e "${PUBKEY}"
+}
+
+# Run openssl in gateway container and generate random password
+# stored in TMP
+getRandomPassword() {
+  TMP=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
 }
 
 # Detects Machine OS
@@ -226,6 +239,7 @@ getMachine () {
       *)          machine="UNKNOWN:${unameOut}"
   esac
   MACHINE=${machine}
+  echoBlue "System running on ${MACHINE}"
 }
 
 # detects Machine architecture
@@ -236,7 +250,7 @@ getArch () {
       arm64*)      arch=amd64;;
       x86_64*)     arch=x86_64;;
       amd64*)      arch=arm64;;
-      *)           echoWarn "Unknown architecture (${archOut}). Choosing amd64 image"; arch="amd64"
+      *)           echoWarn "Unknown architecture (${archOut})"; arch="amd64"
   esac
   ARCH=${arch}
 }
@@ -245,10 +259,8 @@ getArch () {
 checkIfRunning () {
   SERVICES=$(docker-compose ps -q | wc -l )
   if [ $SERVICES != "0" ]; then
-    echoBlue "Node is already running"
     return 1
   else
-    echo 'Node is disabled '
     return 0
   fi
 }
@@ -257,30 +269,14 @@ checkIfRunning () {
 updateImages () {
   checkIfRunning
   if [ $? == 1 ]; then 
-    disableNode
+    stopAP
   else 
     echo "node offline"
   fi
  echoBlue "Updating images"
  docker-compose pull
- runAp
+ askAndStartAP
  exit
-}
-
-# generate credentials in md5 and store them in .htpasswd file
-addAuthUser () {
-  echo "Adding user"
-  getTextPasswordAnswer "Password for user ${username}:\n";
-  password="${TMP}";
-  printf "${username}:$(openssl passwd -apr1 ${password})\n"  >> ./nginx/.htpasswd
-  echoBlue "User credentials stored"
-}
-
-# remove line containing $username in .htpasswd file
-deleteAuthUser () {
-  echo "Deleting  user"
-  sed -i.bak "/${username}/d" ./nginx/.htpasswd 
-  rm ./nginx/.htpasswd.bak
 }
 
 # Test if already initialised
@@ -303,53 +299,39 @@ resetInstance () {
   fi
   checkIfInitialised
    if [ $? == 1 ]; then
-    disableNode
+    stopAP
   fi
-  # Gateway data
-  rm -rf "./gateway/data" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-key.der" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-key.pem" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-pubkey.der" > /dev/null 2>&1
-  rm  "./gateway/keystore/platform-pubkey.pem" > /dev/null 2>&1
-  rm  "./gateway/keystore/ogwapi-token" > /dev/null 2>&1
-  rm "./nginx/.htpasswd" > /dev/null 2>&1
-  touch "./nginx/.htpasswd" > /dev/null 2>&1
-  rm  -rf "./gateway/log" > /dev/null 2>&1
-  # Docker-compose
-  rm  "./docker-compose.yml" > /dev/null 2>&1
-
-  # NGINX
-  rm  -rf "./gateway/logs" > /dev/null 2>&1
-  # REDIS data
-  rm -rf "./redis/data" > /dev/null 2>&1
+  # All volumes
+  docker-compose down -v
   # .env
   rm ".env" > /dev/null 2>&1
-  echo "Node instance deleted... Please remove your Access Point credentials in AURORAL website if no longer needed"
+  echoBlue "Node instance deleted... Please remove your Access Point credentials in AURORAL website if no longer needed"
   exit 0
 }
 
 # Get opts
-while getopts 'hirsua:d:' OPTION; do
+while getopts 'hirsuad:b' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
     s) stopAP 
-       exit0;;
+       exit 0;;
     r) resetInstance; 
        exit 0;;
     i) DAEMON=1;;
     u) updateImages;
        exit 0;;
-    a) username=$OPTARG;
-       addAuthUser;
+    b) backupAP;
        exit 0;;
-    d) username=$OPTARG;
-       deleteAuthUser;
+    a) restoreAP;
        exit 0;;
   esac 
 done
 
+#----------------------------------------------------------
 # Main program
+
+
 # Test for dependencies
 testDependencies "${DEPENDENCIES[@]}"
 
@@ -357,7 +339,7 @@ testDependencies "${DEPENDENCIES[@]}"
 checkIfInitialised
 if [ $? == 1 ]; then 
   echoBlue "Already initialised."
-  runAp
+  askAndStartAP
   exit
 fi
 
@@ -365,18 +347,12 @@ fi
 getMachine
 getArch
 
-DOCKER_FILENAME='./docker-compose/docker-compose'
-
-# choose docker-compose file
-# Not necessary after docker multiarch image
-# if [ ${ARCH} == 'armv7' ]; then
-#  DOCKER_FILENAME="${DOCKER_FILENAME}.armv7"
-# fi
-
-
-
 # Create .env file
 cp $ENV_EXAMPLE $ENV_FILE
+
+# Generate password for REDIS
+getRandomPassword;
+editEnvFile "DB_PASSWORD";
 
 # Production mode
 getYesNOanswer 'Run in PRODUCTION mode?'; 
@@ -386,13 +362,6 @@ else
   TMP="development";
 fi
 editEnvFile "NODE_ENV";
-
-# Wot
-getYesNOanswer 'Enable Wot?'; 
-if [ $? == 1 ]; then 
-  editEnvFile "WOT_ENABLED" 1
-  DOCKER_FILENAME="${DOCKER_FILENAME}.wot"
-fi 
 
 # DB caching
 getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
@@ -416,36 +385,6 @@ fillGatewayConfig $AGID
 generateCertificates
 getTextAnswer "Hit enter after done" "";
 
-# Auth
-getYesNOanswer 'Enable Basic authentification and ssl?'; 
-if [ $? == 1 ]; then 
-  BASIC_AUTH=1
-  DOCKER_FILENAME="${DOCKER_FILENAME}.auth"
-  mkdir ./nginx/cert > /dev/null 2>&1
-  echoBlue 'Generating self signed certificate'; 
-  openssl req -x509 -nodes -days 1825 -newkey rsa:2048 -subj "/C=GB/ST=London/L=London/O=Global Security/OU=Auroral Agent/CN=auroral-agent.local" -keyout ./nginx/cert/nginx-selfsigned.key -out nginx/cert/nginx-selfsigned.crt > /dev/null 2>&1
-  echoBlue '...done'; 
-  getYesNOanswer 'Do you want to add credentials for first user?'; 
-  if [ $? == 1 ]; then 
-    getTextAnswer "Username:"; 
-    username=$TMP
-    addAuthUser;
-  fi 
-fi 
-
-echo "Choosing ${DOCKER_FILENAME}.yml"
-cp "${DOCKER_FILENAME}.yml" ./docker-compose.yml
-
-# TBD
-#security
-
-# create folders for NGINX AGENT GATEWAY and REDIS
-createFolders
-
-# fix if linux
-testPermissions
-
-
 # Start Node
 echoBlue 'Node initialisation completed' 
-runAp
+askAndStartAP

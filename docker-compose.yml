@@ -1,0 +1,59 @@
+version: '2.4'
+services:
+  auroral-agent:
+    restart: always
+    image: ghcr.io/auroralh2020/auroral_agent:latest
+    volumes:
+    - ./.env:/app/.env:ro
+    depends_on:
+      cache-db:
+        condition: service_healthy
+    extra_hosts:
+    - "myhost:host-gateway"
+  proxy:
+    restart: always
+    depends_on:
+      cache-db:
+        condition: service_healthy
+    ports:
+      - '${EXTERNAL_PORT}:8080'
+    image: ghcr.io/auroralh2020/auroral-node-proxy:latest
+  gateway:
+    restart: always
+    volumes:
+    - aur_gateway:/gateway
+    image: ghcr.io/auroralh2020/auroral-gateway:latest
+  cache-db:
+    restart: always
+    # ports:
+    # - 6379:6379
+    volumes:
+    - aur_redis:/data
+    command: [
+      "bash", "-c",
+      '
+       docker-entrypoint.sh
+       --requirepass "${DB_PASSWORD}" 
+       --bind "0.0.0.0"
+      '
+    ]
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    image: redis:6.2.6-buster
+  triplestore:
+    image: acimmino/auroral-fuseky:latest
+    volumes:
+     - aur_triplestore:/fuseki
+    ports:
+      - '4567:4567'
+  wothive:
+    image: acimmino/wot-hive:latest
+    ports:
+      - '9000:9000'
+volumes:
+  aur_triplestore:
+  aur_gateway:
+  aur_redis:
