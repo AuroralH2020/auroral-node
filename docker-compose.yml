@@ -1,8 +1,8 @@
 version: '2.4'
 services:
   auroral-agent:
-    restart: always
-    image: ghcr.io/auroralh2020/auroral_agent:latest
+    restart: unless-stopped
+    image: ghcr.io/auroralh2020/auroral-node-agent:latest
     volumes:
     - ./.env:/app/.env:ro
     depends_on:
@@ -11,7 +11,7 @@ services:
     extra_hosts:
     - "myhost:host-gateway"
   proxy:
-    restart: always
+    restart: unless-stopped
     depends_on:
       cache-db:
         condition: service_healthy
@@ -19,12 +19,12 @@ services:
       - '${EXTERNAL_PORT}:8080'
     image: ghcr.io/auroralh2020/auroral-node-proxy:latest
   gateway:
-    restart: always
+    restart: unless-stopped
     volumes:
     - aur_gateway:/gateway
     image: ghcr.io/auroralh2020/auroral-gateway:latest
   cache-db:
-    restart: always
+    restart: unless-stopped
     # ports:
     # - 6379:6379
     volumes:
