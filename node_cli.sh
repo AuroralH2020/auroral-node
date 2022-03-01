@@ -75,26 +75,21 @@ getTextAnswer () {
   fi
 }
 
+
 # Displays password dialog and return given text in TMP 
 getTextPasswordAnswer () {
-  TMP=''
-  # write question
+  prompt=""
+  unset TMP
   echo -n -e "\033[1;34m$1\033[0m"
-  # wait for answer and store it to TMP
-  stty_orig=$(stty -g)
-  stty -echo
-  read TMP
-  stty $stty_orig
-  # if size is defined (second argument)
-  if [ -z "$2" ]; then 
-    return
-  else
-    # Check size and repeat
-    while  [[ ${#TMP} != $2 ]]; do
-    echo -n -e "\033[1;31mIncorrect length. $1\033[0m"
-    read TMP
-    done
-  fi
+  while IFS= read -p "$prompt" -r -s -n 1 char
+  do
+      if [[ $char == $'\0' ]]
+      then
+          break
+      fi
+      prompt='*'
+      TMP+="$char"
+  done
 }
 # Edit field in .env file
 # params: key, ?value 
@@ -376,7 +371,7 @@ fi;
 # Node agid + pasword
 echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in section 'Access points'"
 getTextAnswer "Please insert generated AGID:" "36"; AGID=$TMP; editEnvFile "GTW_ID" 
-getTextAnswer "Please insert Node password:" ""; editEnvFile "GTW_PWD" 
+getTextPasswordAnswer "Please insert Node password:" ""; editEnvFile "GTW_PWD" 
 
 # Fill GatewayConfig.xml
 fillGatewayConfig $AGID
