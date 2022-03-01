@@ -130,7 +130,7 @@ editEnvFile () {
 # Search for identity tag and replace with given value
 # param: AGID
 fillGatewayConfig () {
-  docker-compose run  --rm --entrypoint "/bin/bash  -c ' cd /gateway/config/ && ./fillAgid.sh ${AGID}'" gateway
+  docker-compose run  --rm --entrypoint "/bin/bash  -c ' cd /gateway/persistance/config/ && ./fillAgid.sh ${AGID}'" gateway
 }
 
 # Asks and run the APP with docker-compose
@@ -171,7 +171,7 @@ backupAP () {
   CONTAINERS=$(docker-compose ps -q)
   VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
   # TODO redis, gateway, triplestore + env
-  docker run --rm -ti  $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar cvf /backup/node_backup.tar /data /gateway /fuseki /backup/.env'
+  docker run --rm -ti  $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar cvf /backup/node_backup.tar /data /gateway/persistance /fuseki /backup/.env'
   echoBlue 'Stopping NODE' 
   stopAP
   echoBlue 'Done' 
@@ -213,7 +213,7 @@ generateCertificates () {
   # run script to generate certs
   echo "Generating certificates"
   PUBKEY=$(docker-compose run  --rm --entrypoint "/bin/bash -c 
-  'cd  /gateway/keystore && 
+  'cd  /gateway/persistance/keystore && 
    ./genkeys.sh > /dev/null 2>&1  && 
    cat platform-pubkey.pem '" gateway)
   # display pubkey and ask to copy 
