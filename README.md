@@ -1,6 +1,10 @@
 # AURORAL_NODE #
 
-This README documents the node part of AURORAL platform, which is funded by European Union’s Horizon 2020 Framework Programme for Research and Innovation under grant agreement no 101016854 AURORAL.
+This README documents the Node client of AURORAL platform, which is funded by European Union’s Horizon 2020 Framework Programme for Research and Innovation under grant agreement no 101016854 AURORAL.
+
+The Node is the software necessary to connect an IoT infrastructure or a Service to AURORAL platform. It runs a docker environment with the necessary applications to connect to AURORAL and to use the local services offered by the Node such as the storage of semantic data or the access to the AURORAL standard API.
+
+Visit the **[WIKI](https://github.com/AuroralH2020/auroral-node/wiki)** for technical information or the **[BLOG](https://blog.bavenir.eu/auroral/)** for tutorials and how-to articles.
 
 ### How To Start ###
 
@@ -15,97 +19,20 @@ After creating your account you will need to have a user with **system integrato
 
 Once a user with this role exists, a new tab on the side menu will appear, **Access Points**. There you can create a new access point and assign a password to it. Once the access point is created an AGID will be assigned to it. For each AURORAL Node that you wish to deploy you will need a pair AGID:password that will be requested during the configuration.
 
-Your account is all set! Now you can proceed to install an AURORAL Node, please visit the section **Launcher Script** (Available for MAC and Linux) or **Deployment**.
+Your account is all set! Now you can proceed to install an AURORAL Node, please visit the section **NODE CLI**.
 
 ### Requirements ###
 
 - Docker
 - Docker-compose
 - Available architecture images: amd64, arm64 or armv7 (RaspberryPi and similar)
+- OS supported: Linux (Debian/Ubuntu)(*), MAC OS, Windows 10/11 with WSL and Raspbian
 
-### Launcher script ###
+(*) Currently only tested for Linux on Debian and Ubuntu, other modern popular Linux distributions able to run Docker should also be supported.
 
-**Available for MAC and Linux**
+### Node CLI ###
 
-In order to facilitate the installation of the node we are providing an interactive script to go over the process. This scripts enables the user to initialize, just run or remove all the node files when no longer needed.
-
-The launcher does not configure any adapter at the moment, see section 7 of deployment section.
-
-### Deployment ###
-
-The node can be configured and run following the instructions below:
-
-Docker-compose is the preferred deployment method
-
-1. Create new *Access Point* in AURORAL neighborhood manager, Access Point section. An Access Point is an AURORAL node identity.
-2. Create your *.env* configuration file based on *env.example*.
-   -  Create .env file in the root directory and add:
-      -  *GTW_ID* from AURORAL neighborhood manager, Access Point *AGID*.
-      -  *GTW_PWD* defined in AURORAL neighborhood manager
-3.  Update `<platformSecurity><identity>` tag in `gateway/GatewayConfig.xml` with your generated *AGID*, identity obtained in Neighbourhood Manager
-4.  Generate certificate pair with script `./gateway/keystore/genkeys.sh` and copy content of *platform-pubkey.pem* to Neighbourhood Manager.
-    - Go to Neighbourhood Manager -> Access Point section
-    - Click on the *KEY* button next to your Access Point
-    - Replace the contents with your *platform-pubkey.pem*. Copy all text including initial and final headers.
-5.  By default is choosed version *amd64 / arm64*. If you want to run on *armv7*, please change docker images in *docker-compose.yml* file. Architectures *amd64 / arm64* will function for most modern computers and cloud servers, while *armv7* will be used in other less powerful machines as RaspberryPi.
-6.  Create folders *agent/imports* and *agent/exports* under root folder [OPTIONAL]
-    - mkdir agent
-    - mkdir imports exports
-    - Necessary backup and restore functionality using filesystem.
-7.  Configure an adapter: By default the agent uses dummy response mode unless an adapter is configured.
-    - Change the adapter mode in the .env file to 'proxy'
-    - Add the host and port of your adapter in .env
-    - All future requests will be redirected to: 
-    - http://host:port/api/properties/oid/pid
-    - Is up to the user to develop/configure the adapter
-8.  Run *docker-compose up -d*
-
-### Node Components ###
-Node contains multiple components:
-- AURORAL agent [REQUIRED]
-  - Custom component that hande all API requests and contains all logic.
-- Redis [REQUIRED]
-  - In-memory data store used for caching and persistance.
-- Nginx [REQUIRED]
-  - Proxy server handling request redirection to agent.
-- AURORAL gateway [REQUIRED]
-  - Java application handling commmunication over XMPP with AURORAL network.
-- Wothive + Triplestore [OPTIONAL]
-  - Semantic storage and semantic services. 
-- AURORAL DLT Client [OPTIONAL] [STILL UNAVAILABLE]
-  - Fabric hyperledger client.
-- Adapter [REQUIRED EXCEPT FOR TESTING]
-  - Connection to underlying smart infrastructure.
-  - AURORAL will provide adapters for certain technologies.
-  - Can be developed by the user.
-
-WoT, DLT and adapter are under development and are not enabled or included by default.
-
-### Coming up ###
-
-- Security: Basic authentication to access the Node API
-- Security: Provide instructions to connect the API over HTTPS
-- Verticals: Semantic adapters
-- Verticals: Other third party examples
-- Horizontals: Service and marketplace integration
-- Support: Script to initialize Node in Windows
-
-### FAQ ###
-
-- message `Warn UNAUTHORIZED`: check step 2-4
-- message `Permission denied`: there is a problem with permissions on Linux machines. You have to change permission to 755
-  - *chmod -R 777 ./nginx*
-  - *chmod -R 777 ./gateway*
-  - *chmod -R 777 ./redis*
-- Adapter - You can run the agent in proxy mode or dummy mode.
-    - Dummy - Agent will respond consumption requests with some automated random value. Use for testing.
-    - Proxy - Agent will redirect the consumption requests to the host specified in the configuration file .env. In future versions we will include adapters developed in AURORAL and how to run them alongside the node. 
-    - Semantic - Agent will use the URL specified in thing description for feach interaction pattern
-- SSL and basic auth - This can be set-up in *nginx.conf* file. In future versions we will include instructions to configure the access to the node with additional security. Certificates are necessary to configure the SSL connections.
-- It is possible to address host machine in adapter with dns record 'myhost'
-- There is a public Wothive test server that can be used. For using you have to change these variables in .env file:
-  - WOT_HOST="https://wothive.linkeddata.es"
-  - WOT_PORT=443
+In order to facilitate the installation of the node we are providing an interactive script to go over the process. This scripts enables the user to initialize, just run or remove all the node files when no longer needed. Also backup is available and other features will be coming in the future.
 
 ### Who do I talk to? ###
 
