@@ -91,6 +91,22 @@ getTextPasswordAnswer () {
       TMP+="$char"
   done
 }
+
+# Displays adapter select dialog
+getAdapterMode () {
+  local answer=1
+  # pring question
+  echoBlue 'Please select adapter mode'
+  # wait for answer
+  select yn in 'dummy' 'proxy' 'semantic'; do
+    case $yn in
+        dummy )    TMP='dummy';break;;
+        proxy )    TMP='proxy';break;;
+        semantic ) TMP='semantic';break;;
+    esac
+done
+}
+
 # Edit field in .env file
 # params: key, ?value 
 # if value is not provided, it is taken from TMP variable
@@ -111,10 +127,10 @@ editEnvFile () {
   # if number do not quote
   if [ -n "$value" ] && [ "$value" -eq "$value" ] 2>/dev/null; then
    # edit env file and save to ENV_BACKUP
-   sed "s/$1=.*/$1=$value/" $ENV_FILE > "$ENV_BACKUP"
+    sed "s@$1=.*@$1=$value@" $ENV_FILE > "$ENV_BACKUP"
   else
     # edit env file and save to ENV_BACKUP
-    sed "s/$1=.*/$1=\"$value\"/" $ENV_FILE > "$ENV_BACKUP"
+    sed "s@$1=.*@$1=\"$value\"@" $ENV_FILE > "$ENV_BACKUP"
   fi
   # move backup to env file
   cat "$ENV_BACKUP" > "$ENV_FILE"
@@ -358,6 +374,7 @@ else
 fi
 editEnvFile "NODE_ENV";
 
+
 # DB caching
 getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
 
@@ -367,6 +384,16 @@ if [ $? == 0 ]; then
   getTextAnswer "Please specify the external port:" "";
   editEnvFile "EXTERNAL_PORT";
 fi;
+
+# select adapter mode 
+getAdapterMode;
+if [ $TMP == proxy ]; then 
+  editEnvFile "ADAPTER_MODE" 
+  getTextAnswer "Please specify proxy HOST:"; editEnvFile "ADAPTER_HOST";
+  getTextAnswer "Please specify proxy PORT:"; editEnvFile "ADAPTER_PORT";
+else
+  editEnvFile "ADAPTER_MODE" 
+fi
 
 # Node agid + pasword
 echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in section 'Access points'"
