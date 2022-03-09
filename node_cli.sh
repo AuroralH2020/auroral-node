@@ -107,6 +107,20 @@ getAdapterMode () {
 done
 }
 
+# Displays adapter select dialog
+getExtensionSelection () {
+  local answer=1
+  # pring question
+  echoBlue 'Do you want to install extension?'
+  # wait for answer
+  select yn in 'any' 'node-red'; do
+    case $yn in
+        'any' )      TMP='any';break;;
+        'node-red' ) TMP='node-red';break;;
+    esac
+  done
+}
+
 # Edit field in .env file
 # params: key, ?value 
 # if value is not provided, it is taken from TMP variable
@@ -314,6 +328,7 @@ resetInstance () {
   fi
   # All volumes
   docker-compose down -v
+  mv docker-compose.backup docker-compose.yml  > /dev/null 2>&1
   # .env
   rm ".env" > /dev/null 2>&1
   echoBlue "Node instance deleted... Please remove your Access Point credentials in AURORAL website if no longer needed"
@@ -385,15 +400,36 @@ if [ $? == 0 ]; then
   editEnvFile "EXTERNAL_PORT";
 fi;
 
-# select adapter mode 
-getAdapterMode;
-if [ $TMP == proxy ]; then 
-  editEnvFile "ADAPTER_MODE" 
-  getTextAnswer "Please specify proxy HOST:"; editEnvFile "ADAPTER_HOST";
-  getTextAnswer "Please specify proxy PORT:"; editEnvFile "ADAPTER_PORT";
+# Install adapter extension
+getExtensionSelection 'Install extension?';
+if [ $TMP == node-red ]; then 
+  cp docker-compose.yml docker-compose.backup
+  docker-compose -f docker-compose.backup -f extensions/node-red-compose.yml config > docker-compose.yml;
+  TMP='proxy';  editEnvFile "ADAPTER_MODE";
+  TMP='http://node-red'; editEnvFile "ADAPTER_HOST";
+  TMP='1250'; editEnvFile "ADAPTER_PORT";
 else
-  editEnvFile "ADAPTER_MODE" 
+  # ANY EXTENSION - choose adapter mode
+  # select adapter mode 
+  getAdapterMode;
+  if [ $TMP == 'proxy' ]; then 
+    editEnvFile "ADAPTER_MODE" 
+    getTextAnswer "Please specify proxy HOST:"; editEnvFile "ADAPTER_HOST";
+    getTextAnswer "Please specify proxy PORT:"; editEnvFile "ADAPTER_PORT";
+  else
+    editEnvFile "ADAPTER_MODE" 
+  fi
 fi
+
+# # select adapter mode 
+# getAdapterMode;
+# if [ $TMP == proxy ]; then 
+#   editEnvFile "ADAPTER_MODE" 
+#   getTextAnswer "Please specify proxy HOST:"; editEnvFile "ADAPTER_HOST";
+#   getTextAnswer "Please specify proxy PORT:"; editEnvFile "ADAPTER_PORT";
+# else
+#   editEnvFile "ADAPTER_MODE" 
+# fi
 
 # Node agid + pasword
 echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in section 'Access points'"

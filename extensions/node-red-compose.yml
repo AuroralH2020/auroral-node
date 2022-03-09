@@ -1,0 +1,10 @@
+version: '2.4'
+services:
+  node-red:
+    image: ghcr.io/auroralh2020/auroral-node-red:latest
+    ports:
+      - '1880:1880'
+    volumes:
+    - aur_node-red:/data
+volumes:
+  aur_node-red:
