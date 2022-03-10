@@ -111,12 +111,12 @@ done
 getExtensionSelection () {
   local answer=1
   # pring question
-  echoBlue 'Do you want to install extension?'
+  echoBlue 'Do you want to install an extension?'
   # wait for answer
-  select yn in 'any' 'node-red'; do
+  select yn in 'No, just the Node' 'Node-red adapter'; do
     case $yn in
-        'any' )      TMP='any';break;;
-        'node-red' ) TMP='node-red';break;;
+        'No, just the Node' )      TMP='any';break;;
+        'Node-red adapter' ) TMP='node-red';break;;
     esac
   done
 }
