@@ -6,5 +6,6 @@ services:
       - '1880:1880'
     volumes:
     - aur_node-red:/data
+    restart: unless-stopped
 volumes:
   aur_node-red:
