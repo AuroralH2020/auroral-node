@@ -113,10 +113,11 @@ getExtensionSelection () {
   # pring question
   echoBlue 'Do you want to install an extension?'
   # wait for answer
-  select yn in 'No, just the Node' 'Node-red adapter'; do
+  select yn in 'No, just the Node' 'Node-red adapter' 'Helio adapter'; do
     case $yn in
         'No, just the Node' )      TMP='any';break;;
         'Node-red adapter' ) TMP='node-red';break;;
+        'Helio adapter' )  TMP='helio';break;;
     esac
   done
 }
@@ -408,6 +409,11 @@ if [ $TMP == node-red ]; then
   TMP='proxy';  editEnvFile "ADAPTER_MODE";
   TMP='http://node-red'; editEnvFile "ADAPTER_HOST";
   TMP='1250'; editEnvFile "ADAPTER_PORT";
+elif [ $TMP == helio ]; then
+  echo 'HELIO';
+  cp docker-compose.yml docker-compose.backup
+  docker-compose -f docker-compose.backup -f extensions/helio-compose.yml config > docker-compose.yml;
+  TMP='semantic';  editEnvFile "ADAPTER_MODE";
 else
   # ANY EXTENSION - choose adapter mode
   # select adapter mode 
