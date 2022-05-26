@@ -5,9 +5,9 @@ services:
     image: ghcr.io/auroralh2020/auroral-node-agent:latest
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
-      interval: 30s
+      interval: 15s
       timeout: 15s
-      retries: 5
+      retries: 10
     depends_on:
       cache-db:
         condition: service_healthy
@@ -55,23 +55,23 @@ services:
       retries: 3
     image: redis:6.2.6-buster
   triplestore:
-    image: acimmino/auroral-fuseky:latest
+    image: acimmino/auroral-fuseky:0.2.3
     volumes:
      - aur_triplestore:/fuseki
     healthcheck:
       test: ["CMD", "curl", "localhost:3030/"]
-      interval: 30s
+      interval: 15s
       timeout: 15s
-      retries: 5
+      retries: 10
     # ports:
       # - '3030:3030'
   wothive:
     image: acimmino/wot-hive:latest
     healthcheck:
       test: ["CMD", "curl", "localhost:9000/"]
-      interval: 30s
+      interval: 15s
       timeout: 15s
-      retries: 5
+      retries: 10
     # ports:
       # - '9000:9000'
 volumes:
