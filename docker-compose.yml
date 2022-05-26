@@ -3,17 +3,28 @@ services:
   auroral-agent:
     restart: unless-stopped
     image: ghcr.io/auroralh2020/auroral-node-agent:latest
-    volumes:
-    - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
     depends_on:
       cache-db:
         condition: service_healthy
+      wothive:
+        condition: service_healthy
+      triplestore:
+        condition: service_healthy
+    volumes:
+    - ./.env:/app/.env:ro
     extra_hosts:
     - "myhost:host-gateway"
   proxy:
     restart: unless-stopped
     depends_on:
       cache-db:
+        condition: service_healthy
+      auroral-agent:
         condition: service_healthy
     ports:
       - '${EXTERNAL_PORT}:8080'
@@ -47,10 +58,20 @@ services:
     image: acimmino/auroral-fuseky:latest
     volumes:
      - aur_triplestore:/fuseki
+    healthcheck:
+      test: ["CMD", "curl", "localhost:3030/"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
     # ports:
       # - '3030:3030'
   wothive:
     image: acimmino/wot-hive:latest
+    healthcheck:
+      test: ["CMD", "curl", "localhost:9000/"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
     # ports:
       # - '9000:9000'
 volumes:

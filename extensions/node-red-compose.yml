@@ -9,5 +9,8 @@ services:
     volumes:
     - aur_node-red:/data
     restart: unless-stopped
+    depends_on:
+      auroral-agent:
+        condition: service_healthy
 volumes:
   aur_node-red:
