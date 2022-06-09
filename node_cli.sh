@@ -13,6 +13,7 @@ USAGE="$(basename "$0") [ -h ] [ -e env ]
       -i  Run interactive mode
       -s  Stop Node
       -b  Backup node
+      -k  Regenerate keys
       -a  Apply backup
      " 
 #----------------------------------------------------------
@@ -219,6 +220,15 @@ restoreAP () {
   stopAP
 }
 
+# Regenerate certificates
+regenerateCertificates() {
+  stopAP
+  echoBlue 'Regenerating keys'
+  generateCertificates
+  echoBlue 'Done' 
+  exit 0
+}
+
 # check if dependencies are installed
 testDependencies () {
   # For all given parameters
@@ -247,6 +257,8 @@ generateCertificates () {
   PUBKEY="\033[1;92m${PUBKEY}\033[0m"
   echo  -e "${PUBKEY}"
 }
+
+
 
 # Run openssl in gateway container and generate random password
 # stored in TMP
@@ -337,11 +349,13 @@ resetInstance () {
 }
 
 # Get opts
-while getopts 'hirsuad:b' OPTION; do
+while getopts 'hirsuad:bk' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
     s) stopAP 
+       exit 0;;
+    k) regenerateCertificates;
        exit 0;;
     r) resetInstance; 
        exit 0;;
