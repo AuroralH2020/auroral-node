@@ -12,9 +12,9 @@ USAGE="$(basename "$0") [ -h ] [ -e env ]
       -u  Update  images
       -i  Run interactive mode
       -s  Stop Node
+      -a  Apply backup
       -b  Backup node
       -k  Regenerate keys
-      -a  Apply backup
      " 
 #----------------------------------------------------------
 # Configuration
@@ -194,7 +194,8 @@ askAndStartAP() {
 backupAP () {
   echoBlue 'Backing up' 
   echoBlue 'Starting NODE' 
-  startAP
+  # ensure containers are created
+  docker-compose up --no-start 
   CONTAINERS=$(docker-compose ps -q)
   VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
   # TODO redis, gateway, triplestore + env
@@ -209,7 +210,8 @@ restoreAP () {
   echo "RestoreAP"
   #Copy env file
   cp $ENV_EXAMPLE $ENV_FILE
-  startAP
+  # create containers 
+  docker-compose up --no-start
   # get containers IDs
   CONTAINERS=$(docker-compose ps -q)
   VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
