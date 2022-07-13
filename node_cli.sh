@@ -253,7 +253,7 @@ generateCertificates () {
   PUBKEY=$(docker-compose run  --rm --entrypoint "/bin/bash -c 
   'cd  /gateway/persistance/keystore && 
    ./genkeys.sh > /dev/null 2>&1  && 
-   cat platform-pubkey.pem '" gateway)
+   cat gateway-pubkey.pem '" gateway)
   # display pubkey and ask to copy 
   echoBlue "Please copy this public key to Access Point settings in AURORAL website:"
   PUBKEY="\033[1;92m${PUBKEY}\033[0m"
@@ -459,7 +459,7 @@ getTextAnswer "Please insert generated AGID:" "36"; AGID=$TMP; editEnvFile "GTW_
 getTextPasswordAnswer "Please insert Node password:" ""; editEnvFile "GTW_PWD" 
 
 # Fill GatewayConfig.xml
-fillGatewayConfig $AGID
+# fillGatewayConfig $AGID
 
 # Genereate certificates
 generateCertificates
