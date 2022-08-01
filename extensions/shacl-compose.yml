@@ -1,0 +1,14 @@
+version: '2.4'
+services:
+  shacl:
+    image: acimmino/coppola:latest
+    volumes: 
+      - type: volume
+        source: shacl-db
+        target: /coppola/app
+        volume: {}
+    ports:
+      - '4568:4567'
+volumes:
+  shacl-db:
+    name: validation-db

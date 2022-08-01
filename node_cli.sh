@@ -123,6 +123,25 @@ getExtensionSelection () {
   done
 }
 
+fillSHACLAndODRL () {
+  # SHACL
+  getYesNOanswer 'Enable ODRL privacy manager? [advanced]' ;
+  if [ $? == "1" ]; then
+    TMP="true"
+    editEnvFile "SEMANTIC_ODRL_ENABLED";
+    docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;
+    mv docker-compose.tmp docker-compose.yml
+  fi
+  # ODRL
+  getYesNOanswer 'Enable SHACL semantic validator? [advanced]' ;
+  if [ $? == "1" ]; then
+    TMP="true"
+    editEnvFile "SEMANTIC_SHACL_ENABLED";
+    docker-compose -f docker-compose.yml -f extensions/shacl-compose.yml config > docker-compose.tmp;
+    mv docker-compose.tmp docker-compose.yml
+  fi
+}
+
 # Edit field in .env file
 # params: key, ?value 
 # if value is not provided, it is taken from TMP variable
@@ -397,14 +416,13 @@ cp $ENV_EXAMPLE $ENV_FILE
 getRandomPassword;
 editEnvFile "DB_PASSWORD";
 
-# Production mode
-getYesNOanswer 'Run in PRODUCTION mode?'; 
-if [ $? == 1 ]; then 
-  TMP="production"; 
-else 
-  TMP="development";
-fi
-editEnvFile "NODE_ENV";
+# Production/Development mode
+# getYesNOanswer 'Run in PRODUCTION mode?'; 
+# if [ $? == 1 ]; then 
+  # TMP="production"; 
+# else 
+  # TMP="development";
+# fi
 
 
 # DB caching
@@ -420,16 +438,24 @@ fi;
 # Install adapter extension
 getExtensionSelection 'Install extension?';
 if [ $TMP == node-red ]; then 
+  # NODE-RED
   cp docker-compose.yml docker-compose.backup
-  docker-compose -f docker-compose.backup -f extensions/node-red-compose.yml config > docker-compose.yml;
+  docker-compose -f docker-compose.yml -f extensions/node-red-compose.yml config > docker-compose.tmp;
+  mv docker-compose.tmp docker-compose.yml
   TMP='proxy';  editEnvFile "ADAPTER_MODE";
   TMP='http://node-red'; editEnvFile "ADAPTER_HOST";
   TMP='1250'; editEnvFile "ADAPTER_PORT";
-elif [ $TMP == helio ]; then
+  # SHACL and ODRL
+  fillSHACLAndODRL
+elif [ $TMP == helio ]; then  
+  # HELIO
   echo 'HELIO';
   cp docker-compose.yml docker-compose.backup
-  docker-compose -f docker-compose.backup -f extensions/helio-compose.yml config > docker-compose.yml;
+  docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;
+  mv docker-compose.tmp docker-compose.yml
   TMP='semantic';  editEnvFile "ADAPTER_MODE";
+  # SHACL and ODRL
+  fillSHACLAndODRL;
 else
   # ANY EXTENSION - choose adapter mode
   # select adapter mode 

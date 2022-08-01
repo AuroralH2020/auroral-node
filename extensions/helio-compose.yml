@@ -9,5 +9,11 @@ services:
         volume: {}
     ports:
       - '4567:4567'
+  frontend:
+    image: ghcr.io/auroralh2020/auroral_helio_frontend:latest
+    depends_on:
+      - helio
+    ports:
+      - "4201:80"
 volumes:
   helio-db:
