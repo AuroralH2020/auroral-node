@@ -426,7 +426,7 @@ editEnvFile "DB_PASSWORD";
 
 
 # DB caching
-getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
+# getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
 
 # Change External Port
 getYesNOanswer 'Use default external port? (81)' ;
