@@ -23,6 +23,7 @@ ENV_FILE=".env"
 ENV_EXAMPLE="env.example"
 ENV_BACKUP="env.edit"
 AURORAL_NM_URL="https://auroral.dev.bavenir.eu/nm/#!/myNodes"
+AURORAL_NM_URL_PRODUCTION="https://auroral.bavenir.eu/nm/#!/myNodes"
 DEPENDENCIES=("docker" "docker-compose" "perl" )
 AGID=""
 TMP=""
@@ -422,6 +423,7 @@ if [ $? == 1 ]; then
   TMP="xmpp://xmpp.auroral.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
   TMP="auroral.bavenir.eu";editEnvFile "XMPP_DOMAIN";
   TMP="https://auroral.bavenir.eu/api/gtw/v1/";editEnvFile "NM_HOST";
+  AURORAL_NM_URL=${AURORAL_NM_URL_PRODUCTION}
   TMP="production"; 
 else 
   TMP="xmpp://auroral.dev.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
