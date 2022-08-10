@@ -417,12 +417,20 @@ getRandomPassword;
 editEnvFile "DB_PASSWORD";
 
 # Production/Development mode
-# getYesNOanswer 'Run in PRODUCTION mode?'; 
-# if [ $? == 1 ]; then 
-  # TMP="production"; 
-# else 
-  # TMP="development";
-# fi
+getYesNOanswer 'Run in PRODUCTION mode?'; 
+if [ $? == 1 ]; then 
+  TMP="xmpp://xmpp.auroral.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
+  TMP="auroral.bavenir.eu";editEnvFile "XMPP_DOMAIN";
+  TMP="https://auroral.bavenir.eu/api/gtw/v1/";editEnvFile "NM_HOST";
+  TMP="production"; 
+else 
+  TMP="xmpp://auroral.dev.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
+  TMP="auroral.dev.bavenir.eu";editEnvFile "XMPP_DOMAIN";
+  TMP="https://auroral.dev.bavenir.eu/api/gtw/v1/";editEnvFile "NM_HOST";
+  TMP="development";
+fi
+
+
 
 
 # DB caching
