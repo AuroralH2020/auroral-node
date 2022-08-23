@@ -182,10 +182,6 @@ fillGatewayConfig () {
 
 # Asks and run the APP with docker-compose
 startAP () {
-  checkIfRunning
-  if [ $? == "1" ]; then
-    return
-  fi
   if [ $DAEMON == "0" ]; then
     echoBlue "Starting Node (-d)"
       docker-compose up -d
@@ -424,12 +420,12 @@ if [ $? == 1 ]; then
   TMP="auroral.bavenir.eu";editEnvFile "XMPP_DOMAIN";
   TMP="https://auroral.bavenir.eu/api/gtw/v1/";editEnvFile "NM_HOST";
   AURORAL_NM_URL=${AURORAL_NM_URL_PRODUCTION}
-  TMP="production"; 
+  TMP="production"; editEnvFile "NODE_ENV";
 else 
   TMP="xmpp://auroral.dev.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
   TMP="auroral.dev.bavenir.eu";editEnvFile "XMPP_DOMAIN";
   TMP="https://auroral.dev.bavenir.eu/api/gtw/v1/";editEnvFile "NM_HOST";
-  TMP="development";
+  TMP="development"; editEnvFile "NODE_ENV";
 fi
 
 
@@ -491,7 +487,9 @@ fi
 
 # Node agid + pasword
 echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in section 'Access points'"
-getTextAnswer "Please insert generated AGID:" "36"; AGID=$TMP; editEnvFile "GTW_ID" 
+getTextAnswer "Please insert generated AGID:" "36"; 
+AGID=$TMP; editEnvFile "GTW_ID";
+TMP="aur-node_${TMP:0:8}"; editEnvFile "COMPOSE_PROJECT_NAME"; 
 getTextPasswordAnswer "Please insert Node password:" ""; editEnvFile "GTW_PWD" 
 
 # Fill GatewayConfig.xml
