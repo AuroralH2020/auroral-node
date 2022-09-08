@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: wothive
+  name: wothive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: wothive
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -c
+        kompose.version: 1.26.1 (a9d05d509)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: wothive
+    spec:
+      containers:
+        - image: acimmino/wot-hive:0.2.3
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - localhost:{{ .Values.wot_port }}/
+            failureThreshold: 10
+            periodSeconds: 15
+            timeoutSeconds: 15
+          name: wothive
+          ports:
+            - containerPort: {{ .Values.wot_port }}
+          resources: {}
+      restartPolicy: Always
+status: {}

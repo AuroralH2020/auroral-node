@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helio
+  labels:
+    io.kompose.service: helio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+        io.kompose.service: helio
+  template:
+    metadata:
+      labels:
+        io.kompose.service: helio
+    spec:
+      containers:
+        - name: helio
+          image: aiguasol/boscapp-helio-rest:latest
+          imagePullPolicy: "Always"
+          resources: {}
+          ports:
+            - containerPort: {{ .Values.helio_port }}
+              name: web
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /helio/app
+              name: aur-helio
+      volumes:
+        - name: aur-helio
+          persistentVolumeClaim:
+            claimName: aur-helio

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: cache-db
+  name: cache-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: cache-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -c
+        kompose.version: 1.26.1 (a9d05d509)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: cache-db
+    spec:
+      containers:
+        - args:
+            - bash
+            - -c
+            - ' docker-entrypoint.sh --requirepass {{ .Values.db_password | quote }} --bind "0.0.0.0" '
+          image: redis:6.2.6-buster
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            failureThreshold: 3
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: cache-db
+          ports:
+            - containerPort: {{ .Values.db_port }}
+          resources: {}
+          volumeMounts:
+            - mountPath: /data
+              name: aur-redis
+      # initContainers:
+      #   - name: make-backup-dir
+      #     image: redis:6.2.6-buster
+      #     command: ["cp", "-r", "/data", "/tmp/"]
+      #     volumeMounts:
+      #     - name: aur-redis
+      #       mountPath: /tmp/
+      restartPolicy: Always
+      volumes:
+        - name: aur-redis
+          persistentVolumeClaim:
+            claimName: aur-redis
+status: {}

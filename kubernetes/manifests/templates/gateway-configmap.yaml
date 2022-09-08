@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-gateway-config
+data:
+    .env: |
+        ADAPTER_HOST={{ .Values.adapter_host | quote  }}
+        ADAPTER_MODE={{ .Values.adapter_mode | quote }}
+        ADAPTER_PORT={{ .Values.adapter_port }}
+        DB_CACHE_ENABLED={{ .Values.db_cache_enabled  | quote}}
+        DB_CACHE_TTL={{ .Values.db_cache_ttl }}
+        DB_HOST={{ .Values.db_host }}
+        DB_PORT={{ .Values.db_port }}
+        EXTERNAL_PORT={{ .Values.external_port }}
+        GTW_HOST={{ .Values.gtw_host | quote }}
+        GTW_PORT={{ .Values.gtw_port }}
+        GTW_TIMEOUT={{ .Values.gtw_timeout }}
+        IP={{ .Values.ip }}
+        NODE_ENV={{ .Values.node_env | quote }}
+        PORT={{ .Values.port }}
+        WOT_ENABLED={{ .Values.wot_enabled | quote }}
+        WOT_HOST={{ .Values.wot_host }}
+        WOT_PORT={{ .Values.wot_port }}
+        DB_PASSWORD={{ .Values.db_password | quote }}
+        GTW_ID={{ .Values.gtw_id | quote }}
+        GTW_PWD={{ .Values.gtw_pwd | quote }}
+        NM_HOST={{ .Values.nm_host | quote }}
+        GTW_TOKEN_TTL={{ .Values.gtw_token_ttl | quote }}
+        GTW_AGENT_HOST={{ .Values.gtw_agent_host | quote }}
+        GTW_AGENT_PORT={{ .Values.gtw_agent_port | quote }}
+        GTW_AGENT_TIMEOUT={{ .Values.gtw_agent_timeout | quote }}
+        EVENT_SETTINGS_FILE={{ .Values.event_settings_file | quote }}
+        XMPP_ENVIRONMENT={{ .Values.xmpp_environment | quote }}
+        XMPP_ENVIROMENT={{ .Values.xmpp_environment | quote }}
+        XMPP_SERVICE={{ .Values.xmpp_service | quote }}
+        XMPP_DOMAIN={{ .Values.xmpp_domain | quote }}
+        XMPP_RESOURCE={{ .Values.xmpp_resource | quote }}

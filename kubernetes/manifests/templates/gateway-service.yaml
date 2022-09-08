@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: gateway
+  name: gateway
+spec:
+  ports:
+    - name: {{ .Values.gtw_port | quote }}
+      port: {{ .Values.gtw_port }}
+      targetPort: {{ .Values.gtw_port }}
+  selector:
+    io.kompose.service: gateway
+status:
+  loadBalancer: {}

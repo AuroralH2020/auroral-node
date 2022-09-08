@@ -1,0 +1,66 @@
+## CONFIGURATION
+node_env: "prod"
+ip: 0.0.0.0
+port: 4000
+# CHANGE IF RUNNING TWO NODES IN SAME MACHINE!
+external_port: 81
+proxy_port: 8080
+
+## GATEWAY
+#### Replace GTW_HOST by localhost if local mode
+gtw_host: "http://gateway"
+gtw_port: 8181
+gtw_timeout: 10000
+
+#### Add your credentials below, obtain them in the Neighbourhood Manager
+gtw_id: <gtw_id>
+gtw_pwd: <gtw_pwd>
+
+## Persistance
+#### Replace DB_HOST by localhost if local mode
+db_type:  'REDIS'
+db_password: <redis_password>
+db_host: cache-db
+db_port: 6379
+db_cache_enabled: "true"
+db_cache_ttl: 60
+
+## WoT repository
+wot_enabled: "true"
+wot_host: "http://wothive"
+wot_port: 9000
+
+#### Modes ["dummy", "proxy"(default), "semantic"]
+adapter_mode: "dummy"
+adapter_host: "http://example.localhost"
+adapter_port: 443
+
+use_mapping: "true"
+semantic_odrl_enabled: "false"
+semantic_shacl_enabled: "false"
+xmpp_environment: "auroral"
+xmpp_service: "xmpp://auroral.dev.bavenir.eu:5222"
+xmpp_domain: "auroral.dev.bavenir.eu"
+xmpp_resource: AuroralNode
+
+### gateway
+nm_host: "https://auroral.dev.bavenir.eu/api/gtw/v1/"
+gtw_token_ttl: 86400
+gtw_agent_host: http://auroral-agent
+gtw_agent_port: 4000
+gtw_agent_timeout: 10000
+event_settings_file: persistance/events.json
+
+### triplestore
+triplestore_port: 3030
+
+## helio
+helio_port: 4567
+
+# for dockerhub login
+# https://helm.sh/docs/howto/charts_tips_and_tricks/#creating-image-pull-secrets
+imageCredentials: 
+  registry: quay.io
+  username: someone
+  password: sillyness
+  email: someone@host.com
