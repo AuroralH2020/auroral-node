@@ -41,7 +41,7 @@ echoBlue () {
 
 # Print text in yellow color
 echoWarn () {
-  echo -e "\033[1;33m$@\033[0m"
+  echo -e "\033[1;31m$@\033[0m"
 }
 
 # Displays yes / no dialog and return value
@@ -49,6 +49,9 @@ getYesNOanswer () {
   local answer=1
   # pring question
   echoBlue $1
+  if [[ $# -eq 2 ]] ; then
+    echoWarn $2
+  fi
   # wait for answer
   select yn in 'Yes' 'No'; do
     case $yn in
@@ -414,7 +417,7 @@ getRandomPassword;
 editEnvFile "DB_PASSWORD";
 
 # Production/Development mode
-getYesNOanswer 'Run in PRODUCTION mode?'; 
+getYesNOanswer 'Choose YES for PRODUCTION platform (auroral.bavenir.eu) \nor NO for DEVELOPMENT (auroral.DEV.bavenir.eu)' 'Work in DEVELOPMENT (2) if your product is not final';
 if [ $? == 1 ]; then 
   TMP="xmpp://xmpp.auroral.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
   TMP="auroral.bavenir.eu";editEnvFile "XMPP_DOMAIN";
