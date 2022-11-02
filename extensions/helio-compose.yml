@@ -10,10 +10,13 @@ services:
     ports:
       - '4567:4567'
   frontend:
-    image: ghcr.io/auroralh2020/auroral_helio_frontend:latest
+    image: emiliocrespoperan/helio-frontend:latest
     depends_on:
       - helio
     ports:
-      - "4201:80"
+      - "4202:80"
+    environment:
+      - HELIO_REST_HOST=http://localhost:4567
+      - HELIO_MODE=APP
 volumes:
   helio-db:
