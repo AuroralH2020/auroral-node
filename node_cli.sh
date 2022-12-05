@@ -23,6 +23,7 @@ ENV_FILE=".env"
 ENV_EXAMPLE="env.example"
 ENV_BACKUP="env.edit"
 AURORAL_NM_URL="https://auroral.dev.bavenir.eu/nm/#!/myNodes"
+AURORAL_NM_URL_PRODUCTION="https://auroral.bavenir.eu/nm/#!/myNodes"
 DEPENDENCIES=("docker" "docker-compose" "perl" )
 AGID=""
 TMP=""
@@ -40,7 +41,7 @@ echoBlue () {
 
 # Print text in yellow color
 echoWarn () {
-  echo -e "\033[1;33m$@\033[0m"
+  echo -e "\033[1;31m$@\033[0m"
 }
 
 # Displays yes / no dialog and return value
@@ -48,6 +49,9 @@ getYesNOanswer () {
   local answer=1
   # pring question
   echoBlue $1
+  if [[ $# -eq 2 ]] ; then
+    echoWarn $2
+  fi
   # wait for answer
   select yn in 'Yes' 'No'; do
     case $yn in
@@ -123,6 +127,25 @@ getExtensionSelection () {
   done
 }
 
+fillSHACLAndODRL () {
+  # SHACL
+  getYesNOanswer 'Enable ODRL privacy manager? [advanced]' ;
+  if [ $? == "1" ]; then
+    TMP="true"
+    editEnvFile "SEMANTIC_ODRL_ENABLED";
+    docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;
+    mv docker-compose.tmp docker-compose.yml
+  fi
+  # ODRL
+  getYesNOanswer 'Enable SHACL semantic validator? [advanced]' ;
+  if [ $? == "1" ]; then
+    TMP="true"
+    editEnvFile "SEMANTIC_SHACL_ENABLED";
+    docker-compose -f docker-compose.yml -f extensions/shacl-compose.yml config > docker-compose.tmp;
+    mv docker-compose.tmp docker-compose.yml
+  fi
+}
+
 # Edit field in .env file
 # params: key, ?value 
 # if value is not provided, it is taken from TMP variable
@@ -162,10 +185,6 @@ fillGatewayConfig () {
 
 # Asks and run the APP with docker-compose
 startAP () {
-  checkIfRunning
-  if [ $? == "1" ]; then
-    return
-  fi
   if [ $DAEMON == "0" ]; then
     echoBlue "Starting Node (-d)"
       docker-compose up -d
@@ -253,7 +272,7 @@ generateCertificates () {
   PUBKEY=$(docker-compose run  --rm --entrypoint "/bin/bash -c 
   'cd  /gateway/persistance/keystore && 
    ./genkeys.sh > /dev/null 2>&1  && 
-   cat platform-pubkey.pem '" gateway)
+   cat gateway-pubkey.pem '" gateway)
   # display pubkey and ask to copy 
   echoBlue "Please copy this public key to Access Point settings in AURORAL website:"
   PUBKEY="\033[1;92m${PUBKEY}\033[0m"
@@ -397,18 +416,26 @@ cp $ENV_EXAMPLE $ENV_FILE
 getRandomPassword;
 editEnvFile "DB_PASSWORD";
 
-# Production mode
-getYesNOanswer 'Run in PRODUCTION mode?'; 
+# Production/Development mode
+getYesNOanswer 'Choose YES for PRODUCTION platform (auroral.bavenir.eu) \nor NO for DEVELOPMENT (auroral.DEV.bavenir.eu)' 'Work in DEVELOPMENT (2) if your product is not final';
 if [ $? == 1 ]; then 
-  TMP="production"; 
+  TMP="xmpp://xmpp.auroral.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
+  TMP="auroral.bavenir.eu";editEnvFile "XMPP_DOMAIN";
+  TMP="https://auroral.bavenir.eu/api/gtw/v1/";editEnvFile "NM_HOST";
+  AURORAL_NM_URL=${AURORAL_NM_URL_PRODUCTION}
+  TMP="production"; editEnvFile "NODE_ENV";
 else 
-  TMP="development";
+  TMP="xmpp://auroral.dev.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
+  TMP="auroral.dev.bavenir.eu";editEnvFile "XMPP_DOMAIN";
+  TMP="https://auroral.dev.bavenir.eu/api/gtw/v1/";editEnvFile "NM_HOST";
+  TMP="development"; editEnvFile "NODE_ENV";
 fi
-editEnvFile "NODE_ENV";
+
+
 
 
 # DB caching
-getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
+# getYesNOanswer 'Enable caching adapter values?' ; editEnvFile "DB_CACHE_ENABLED" $?
 
 # Change External Port
 getYesNOanswer 'Use default external port? (81)' ;
@@ -420,16 +447,24 @@ fi;
 # Install adapter extension
 getExtensionSelection 'Install extension?';
 if [ $TMP == node-red ]; then 
+  # NODE-RED
   cp docker-compose.yml docker-compose.backup
-  docker-compose -f docker-compose.backup -f extensions/node-red-compose.yml config > docker-compose.yml;
+  docker-compose -f docker-compose.yml -f extensions/node-red-compose.yml config > docker-compose.tmp;
+  mv docker-compose.tmp docker-compose.yml
   TMP='proxy';  editEnvFile "ADAPTER_MODE";
   TMP='http://node-red'; editEnvFile "ADAPTER_HOST";
   TMP='1250'; editEnvFile "ADAPTER_PORT";
-elif [ $TMP == helio ]; then
+  # SHACL and ODRL
+  fillSHACLAndODRL
+elif [ $TMP == helio ]; then  
+  # HELIO
   echo 'HELIO';
   cp docker-compose.yml docker-compose.backup
-  docker-compose -f docker-compose.backup -f extensions/helio-compose.yml config > docker-compose.yml;
+  docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;
+  mv docker-compose.tmp docker-compose.yml
   TMP='semantic';  editEnvFile "ADAPTER_MODE";
+  # SHACL and ODRL
+  fillSHACLAndODRL;
 else
   # ANY EXTENSION - choose adapter mode
   # select adapter mode 
@@ -455,11 +490,13 @@ fi
 
 # Node agid + pasword
 echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in section 'Access points'"
-getTextAnswer "Please insert generated AGID:" "36"; AGID=$TMP; editEnvFile "GTW_ID" 
+getTextAnswer "Please insert generated AGID:" "36"; 
+AGID=$TMP; editEnvFile "GTW_ID";
+TMP="aur-node_${TMP:0:8}"; editEnvFile "COMPOSE_PROJECT_NAME"; 
 getTextPasswordAnswer "Please insert Node password:" ""; editEnvFile "GTW_PWD" 
 
 # Fill GatewayConfig.xml
-fillGatewayConfig $AGID
+# fillGatewayConfig $AGID
 
 # Genereate certificates
 generateCertificates

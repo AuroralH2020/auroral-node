@@ -33,7 +33,8 @@ services:
     restart: unless-stopped
     volumes:
     - aur_gateway:/gateway/persistance
-    image: ghcr.io/auroralh2020/auroral-gateway:latest
+    - ./.env:/gateway/.env:ro
+    image: ghcr.io/auroralh2020/auroral_gateway_js:latest
   cache-db:
     restart: unless-stopped
     # ports:
@@ -66,7 +67,7 @@ services:
     # ports:
       # - '3030:3030'
   wothive:
-    image: acimmino/wot-hive:0.2.3
+    image: acimmino/wot-hive:latest
     healthcheck:
       test: ["CMD", "curl", "localhost:9000/"]
       interval: 15s
