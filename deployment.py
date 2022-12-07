@@ -146,7 +146,11 @@ def checkRequirements():
         if result.stderr:
             print("ERROR: dependency" + dep + " not found")
             exit(1)
-    # TODO: Check if docker is running
+    # Check if docker is running
+    result = subprocess.run('docker info', shell=True, capture_output=True)
+    if result.returncode != 0:
+        print("ERROR: docker not running")
+        exit(1)
     return
 
 def unregisterLocal():
