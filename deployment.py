@@ -12,10 +12,21 @@ import re
 import secrets
 import requests
 
+
+# Response codes:
+# 0 - OK
+# 1 - Deppendencies not installed
+# 2 - Argument error
+# 3 - Could not communicate with platform
+# 4 - Could not generate certificates
+# 5 - Docker related error
+# 6 - Node is not initialised 
+# 7 - Node is already initialised
+
 version = '0.1'
 
 # Define variables
-dependensies=["docker", "docker-compose", "perl"]
+dependensies=["docker", "docker-compose"]
 auroral_url_production="https://auroral.bavenir.eu/"
 auroral_url_development="https://auroral.dev.bavenir.eu/"
 auroral_url=''
@@ -23,7 +34,7 @@ auroral_url=''
 # Parse command line arguments
 
 # Instantiate the parser
-parser = argparse.ArgumentParser(description='Optional app description')
+parser = argparse.ArgumentParser(description='Initialisation script for Auroral node')
 
 # Required
 parser.add_argument('-k', '--keyid', nargs='?', dest='keyid', type=str, help='token for communication with platform')
@@ -35,59 +46,70 @@ parser.add_argument('-e', '--env', dest='env', default='dev', type=str, nargs='?
 parser.add_argument('-a', '--adapter', dest='adapter_mode', default='dummy', type=str, nargs='?', choices=['dummy', 'custom', 'helio', 'nodered'], help='ADAPTER mode')
 parser.add_argument('-n', '--name', dest='node_name', default=platform.node(), type=str, nargs='?', help='Your node name (default: hostname)')
 # Optional flags
-parser.add_argument('-S, --SHACL', dest='use_shacl', action='store_true', help='Use SHACL validation')
-parser.add_argument('-O, --ODRL', dest='use_odrl', action='store_true', help='Use ODRL validation')
-parser.add_argument('-u, --unattended', dest='unattended', action='store_true', help='Use unattended mode')
-parser.add_argument('-d, --deleteLocal', dest='unregisterLocal', action='store_true', help='Delete node locally')
-parser.add_argument('-D, --deleteRemote', dest='unregisterGlobal', action='store_true', help='Delete node from platform and locally')
-parser.add_argument('-b, --backupNode', dest='backupNode', action='store_true', help='Create tgz backup of node')
-parser.add_argument('-r, --restoreNode', dest='restoreNode', action='store_true', help='Restores node from backup')
-parser.add_argument('-c, --regenerateCertificates', dest='regenerateCertificates', action='store_true', help='Regenerate certificates for gateway and send them to platform')
+parser.add_argument('-S', '--SHACL', dest='use_shacl', action='store_true', help='Use SHACL validation')
+parser.add_argument('-O', '--ODRL', dest='use_odrl', action='store_true', help='Use ODRL validation')
+parser.add_argument('-u', '--unattended', dest='unattended', action='store_true', help='Use unattended mode')
+parser.add_argument('-d', '--deleteLocal', dest='unregisterLocal', action='store_true', help='Delete node locally')
+parser.add_argument('-D', '--deleteRemote', dest='unregisterGlobal', action='store_true', help='Delete node from platform and locally')
+parser.add_argument('-b', '--backupNode', dest='backupNode', action='store_true', help='Create tgz backup of node')
+parser.add_argument('-r', '--restoreNode', dest='restoreNode', action='store_true', help='Restores node from backup')
+parser.add_argument('-c', '--regenerateCertificates', dest='regenerateCertificates', action='store_true', help='Regenerate certificates for gateway and send them to platform')
+parser.add_argument('-A', '--showAgid', dest='showAgid', action='store_true', help='Once registered, shows AGID to stdout')
 parser.add_argument('-v', '--version', action='version', version=version)
-# Parse
-args = parser.parse_args()     
 
 configuration = {
     # Default values
     'env': 'dev',
     'node_name': platform.node(),
 }
+def closeScript(code: int):
+    if(code == 0 or code == 7):
+        if(args and 'showAgid' in args and args.showAgid):
+            # Extract agid
+            with open('.env', 'r') as file:
+                envFile = file.read()
+                agid = re.search('GTW_ID=(.*)', envFile).group(1)
+                print(agid)
+    exit(code)
 
+def printProgress(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+    
 def checkIfInitialised():
-    # print("Checking if initialised")
+    # printProgress("Checking if initialised")
     return os.path.exists('.env')
 
 def backupComposeFile():
-    # print("Backing up docker-compose.yml")
+    # printProgress("Backing up docker-compose.yml")
     if not os.path.exists('./docker-compose.backup'):
         os.system('cp ./docker-compose.yml ./docker-compose.backup')  
     return 
 
 def readEnvExampleFile()-> str:
-    # print("Reading .env file")
+    # printProgress("Reading .env file")
     with open('./env.example', 'r') as file:
         return file.read()
 
 def writeEnvFile(envFile: str):
-    # print("Writing .env file")
+    # printProgress("Writing .env file")
     with open('./.env', 'w') as file:
         file.write(envFile)
 
 def generateCertificatesGtw() -> str:
-    print("Generating certificates for gateway")
+    printProgress("Generating certificates for gateway")
     result = subprocess.run('''docker-compose run  --rm --entrypoint "/bin/bash -c \
     'cd  /gateway/persistance/keystore && \
     ./genkeys.sh > /dev/null 2>&1  && \
     cat gateway-pubkey.pem '" gateway''', shell=True, capture_output=True,)
     if result.returncode != 0:
-        print("ERROR: sending certificate to platform")
-        print(result.stderr)
-        exit(1)
+        printProgress("ERROR: sending certificate to platform")
+        printProgress(result.stderr)
+        closeScript(4)
     return result.stdout
 
 # return agid, password
 def registerInPlatform(name: str) -> tuple[str, str]:
-    print("Registering in platform")
+    printProgress("Registering in platform")
     # Generate random password
     password = secrets.token_urlsafe(20)
     # Send request to platform
@@ -104,13 +126,13 @@ def registerInPlatform(name: str) -> tuple[str, str]:
     x = requests.post(url, json = payload)
 
     if x.status_code != 200:
-        print("ERROR: Could not register in platform")
-        exit(1)
+        printProgress("ERROR: Could not register in platform")
+        closeScript(3)
     return [x.json().get('message').get('agid'), password]
 
 # unregister in platform
 def unregisterInPlatform():
-    print("Unregistering node from platform")
+    printProgress("Unregistering node from platform")
     with open('.env', 'r') as file:
         envFile = file.read()
         agid = re.search('GTW_ID=(.*)', envFile).group(1)
@@ -124,11 +146,11 @@ def unregisterInPlatform():
         x = requests.post(url, json = payload)
 
     if x.status_code != 200:
-        print("ERROR: Could not unregister from platform")
-        exit(1)
+        printProgress("ERROR: Could not unregister from platform")
+        closeScript(3)
 
 def sendCertificateToPlatform(agid: str,  pubkey: str):
-    print("Sending certificate to platform")
+    printProgress("Sending certificate to platform")
     url = auroral_url + 'api/external/v1/node/' + agid
     payload = {
         'keyid': args.keyid,
@@ -137,24 +159,24 @@ def sendCertificateToPlatform(agid: str,  pubkey: str):
     }
     x = requests.put(url, json = payload)
     if x.status_code != 200:
-        print("ERROR: Could not send certificate to platform")
-        exit(1)
+        printProgress("ERROR: Could not send certificate to platform")
+        closeScript(3)
 
 def checkRequirements():
     for dep in dependensies:
         result = subprocess.run(dep + ' -v', shell=True, capture_output=True)
         if result.stderr:
-            print("ERROR: dependency" + dep + " not found")
-            exit(1)
+            printProgress("ERROR: dependency" + dep + " not found")
+            closeScript(1)
     # Check if docker is running
     result = subprocess.run('docker info', shell=True, capture_output=True)
     if result.returncode != 0:
-        print("ERROR: docker not running")
-        exit(1)
+        printProgress("ERROR: docker not running")
+        closeScript(5)
     return
 
 def unregisterLocal():
-    print("Unregistering local")
+    printProgress("Unregistering local")
     # run docker-compose down
     os.system('docker-compose down -v')
     # remove docker-compose.backup file
@@ -167,19 +189,19 @@ def unregisterLocal():
 
 def checkIfVolumeExists(volumeName: str) -> bool:
     result = subprocess.run('docker volume ls', shell=True, capture_output=True)
-    if result.stderr:
-        print("ERROR: could not list volumes")
-        exit(1)
+    if result.returncode != 0:
+        printProgress("ERROR: could not list volumes")
+        closeScript(5)
     if volumeName in result.stdout.decode("utf-8"):
         return True
     return False
 
 # Backup
 def backupNode():
-    print("Backing up node")
+    printProgress("Backing up node")
     if(not checkIfInitialised()):
-        print("Node not initialised!")
-        exit(1)
+        printProgress("ERROR: Node not initialised!")
+        closeScript(6)
     with open('.env', 'r') as file:
         envFile = file.read()
         COMPOSE_PREFIX = re.search('COMPOSE_PROJECT_NAME=(.*)', envFile).group(1)
@@ -207,16 +229,16 @@ def backupNode():
     # Command end
     backup_command += '''ubuntu /bin/bash -c 'tar cvf /hostdir/node_backup.tar /backup/ /hostdir/.env /hostdir/docker-compose.yml /hostdir/docker-compose.backup' '''
     os.system(backup_command)
-    print("Backup created in node_backup.tar")
+    printProgress("Backup created in node_backup.tar")
 
 
 # Restore
 def restoreNode():
-    print("Restoring node")
+    printProgress("Restoring node")
     first_restore_command = '''docker run --rm -ti -v ''' + os.getcwd() + ''':/hostdir ubuntu /bin/bash -c \
         'tar -xvf  /hostdir/node_backup.tar ' '''
     os.system(first_restore_command)
-    print("docker-compose.yml, docker-compose.backup and .env restored")
+    printProgress("docker-compose.yml, docker-compose.backup and .env restored")
     # Extract COMPOSE_PROJECT_NAME
     with open('.env', 'r') as file:
         envFile = file.read()
@@ -251,10 +273,10 @@ def initialise():
 
     # Check if already initialised
     if checkIfInitialised():
-        print("Already initialised")
-        exit(0)
+        printProgress("Already initialised")
+        closeScript(7)
     
-    print('Initialising...')
+    printProgress('Initialising...')
     # Backup docker-compose.yml
     backupComposeFile()
     # Read .env file
@@ -274,7 +296,8 @@ def initialise():
             # Set .env file
             envFile = re.sub(r'ADAPTER_MODE=.*\n', 'ADAPTER_MODE=semantic\n', envFile)
         else:
-            print("ERROR: Unknown extension")
+            printProgress("ERROR: Unknown extension")
+            closeScript(1)
     if 'env' in configuration:
         if configuration['env'] == 'dev':
             auroral_url = auroral_url_development
@@ -332,8 +355,8 @@ def initialise():
 def mainUnattended():
     # Check if -k and -s are defined
     if not args.keyid or not args.secret:
-        print("ERROR: -k and -s are required in unattended mode")
-        exit(1)
+        printProgress("ERROR: -k and -s are required in unattended mode")
+        closeScript(1)
     
     # Fill config
     if args.port:
@@ -350,22 +373,22 @@ def mainUnattended():
         configuration['adapter_mode'] = args.adapter_mode
     if args.unregisterGlobal:
         if(not checkIfInitialised()):
-            print("Node not initialised!")
-            exit(1)
+            printProgress("Node not initialised!")
+            closeScript(7)
         unregisterInPlatform()
         unregisterLocal()
-        exit(0)
+        closeScript(0)
     if args.unregisterLocal:
         if(not checkIfInitialised()):
-            print("Node not initialised!")
-            exit(1)
+            printProgress("Node not initialised!")
+            closeScript(6)
         unregisterLocal()
-        exit(0)
+        closeScript(0)
     if args.regenerateCertificates:
         if(not checkIfInitialised()):
             global auroral_url
-            print("Node not initialised!")
-            exit(1)
+            printProgress("Node not initialised!")
+            closeScript(6)
         with open('.env', 'r') as file:
             envFile = file.read()
             agid = re.search('GTW_ID=(.*)', envFile).group(1)
@@ -374,15 +397,22 @@ def mainUnattended():
         pubkey = generateCertificatesGtw()
         # Send certificate to platform
         sendCertificateToPlatform(agid, pubkey)
-        exit(0)
+        closeScript(0)
 
     # Run initialisation with config
     initialise()
 
 
 def mainInteractive():
-    print('Interactive mode not implemented yet - please use unattended (-u). Closing...')
-    exit(1)
+    printProgress('Interactive mode not implemented yet - please use unattended (-u). Closing...')
+    closeScript(1)
+
+# Parse args
+try:
+    args = parser.parse_args()
+except SystemExit:
+    closeScript(2)
+
 
 def main() -> int:
     # Check requirements
@@ -391,15 +421,16 @@ def main() -> int:
     # Check if backup / restore is requested
     if args.backupNode:
         backupNode()
-        exit(0)
+        closeScript(0)
     if args.restoreNode:
         restoreNode()
-        exit(0)
+        closeScript(0)
 
     if args.unattended:
        mainUnattended()
     else :
        mainInteractive()
+    closeScript(0)
 
 if __name__ == '__main__':
-    sys.exit(main())  
+    main()
