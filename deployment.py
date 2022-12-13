@@ -290,7 +290,7 @@ def initialise():
         elif(configuration['adapter_mode'] == 'nodered'):
             # Set .env file
             envFile = re.sub(r'ADAPTER_MODE=.*\n', 'ADAPTER_MODE=proxy\n', envFile)
-            envFile = re.sub(r'ADAPTER_HOST=.*\n', 'ADAPTER_HOST=http://nodered\n', envFile)
+            envFile = re.sub(r'ADAPTER_HOST=.*\n', 'ADAPTER_HOST=http://node-red\n', envFile)
             envFile = re.sub(r'ADAPTER_PORT=.*\n', 'ADAPTER_PORT=1250\n', envFile)
         elif(configuration['adapter_mode'] == 'helio'):
             # Set .env file
