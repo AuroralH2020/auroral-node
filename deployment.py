@@ -331,11 +331,11 @@ def initialise():
     # Install docker-compose extensions
     if 'use_odrl' in configuration:
         # Add docker-compose extension
-        os.system('docker-compose -f docker-compose.yml -f extensions/shacl-compose.yml config > docker-compose.tmp;')  
+        os.system('docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;')  
         os.system('mv docker-compose.tmp docker-compose.yml')
     if 'use_shacl' in configuration:
         # Add docker-compose extension
-        os.system('docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;')  
+        os.system('docker-compose -f docker-compose.yml -f extensions/shacl-compose.yml config > docker-compose.tmp;')  
         os.system('mv docker-compose.tmp docker-compose.yml')
     if 'adapter_mode' in configuration:
         if(configuration['adapter_mode'] == 'nodered'):
