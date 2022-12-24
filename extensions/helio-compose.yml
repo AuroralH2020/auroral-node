@@ -5,7 +5,7 @@ services:
     volumes: 
       - type: volume
         source: helio-db
-        target: /helio/app
+        target: /app
         volume: {}
     ports:
       - '4567:4567'
