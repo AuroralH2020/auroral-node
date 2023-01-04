@@ -310,13 +310,13 @@ def initialise():
             envFile = re.sub(r'XMPP_DOMAIN=.*\n', 'XMPP_DOMAIN=auroral.bavenir.eu\n', envFile)
             envFile = re.sub(r'NODE_ENV=.*\n', 'NODE_ENV=production\n', envFile)
     if 'port' in configuration:
-        envFile = re.sub("EXTERNAL_PORT=.*\n", "EXTERNAL_PORT=" + str(configuration['port'])+'\n', envFile)
+        envFile = re.sub(r'EXTERNAL_PORT=.*\n', 'EXTERNAL_PORT=' + str(configuration['port'])+'\n', envFile)
     if 'use_shacl' in configuration:
         # Edit env file
-        envFile = re.sub("SEMANTIC_SHACL_ENABLED=.*\n", "SEMANTIC_SHACL_ENABLED=true\n", envFile)
+        envFile = re.sub(r'SEMANTIC_SHACL_ENABLED=.*\n', 'SEMANTIC_SHACL_ENABLED=true\n', envFile)
     if 'use_odrl' in configuration:
+        envFile = re.sub(r'SEMANTIC_ODRL_ENABLED=.*\n', 'SEMANTIC_ODRL_ENABLED=true\n', envFile)
         # Edit env file
-        envFile = re.sub("SEMANTIC_ODRL_ENABLED=.*\n", "SEMANTIC_ODRL_ENABLED=true\n", envFile)
     
     # Register in platform
     agid, password = registerInPlatform(configuration['node_name'])

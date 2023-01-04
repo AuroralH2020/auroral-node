@@ -2,7 +2,7 @@ version: '2.4'
 services:
   auroral-agent:
     restart: unless-stopped
-    image: ghcr.io/auroralh2020/auroral-node-agent:latest
+    image: ghcr.io/auroralh2020/auroral-node-agent:beta
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 15s
@@ -34,7 +34,7 @@ services:
     volumes:
     - aur_gateway:/gateway/persistance
     - ./.env:/gateway/.env:ro
-    image: ghcr.io/auroralh2020/auroral_gateway_js:latest
+    image: ghcr.io/auroralh2020/auroral_gateway_js:beta
   cache-db:
     restart: unless-stopped
     # ports:
