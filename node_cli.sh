@@ -83,18 +83,10 @@ getTextAnswer () {
 
 # Displays password dialog and return given text in TMP 
 getTextPasswordAnswer () {
-  prompt=""
   unset TMP
-  echo -n -e "\033[1;34m$1\033[0m"
-  while IFS= read -p "$prompt" -r -s -n 1 char
-  do
-      if [[ $char == $'\0' ]]
-      then
-          break
-      fi
-      prompt='*'
-      TMP+="$char"
-  done
+  echoBlue "Please enter a password:";
+  echo "note: characters are not visible while typing";
+  read -s TMP;
 }
 
 # Displays adapter select dialog
@@ -493,7 +485,7 @@ echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in secti
 getTextAnswer "Please insert generated AGID:" "36"; 
 AGID=$TMP; editEnvFile "GTW_ID";
 TMP="aur-node_${TMP:0:8}"; editEnvFile "COMPOSE_PROJECT_NAME"; 
-getTextPasswordAnswer "Please insert Node password:" ""; editEnvFile "GTW_PWD" 
+getTextPasswordAnswer ; editEnvFile "GTW_PWD" 
 
 # Fill GatewayConfig.xml
 # fillGatewayConfig $AGID
