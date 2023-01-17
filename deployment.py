@@ -304,11 +304,13 @@ def initialise():
             envFile = re.sub(r'XMPP_SERVICE=.*\n', 'XMPP_SERVICE=xmpp://auroral.dev.bavenir.eu:5222\n', envFile)
             envFile = re.sub(r'XMPP_DOMAIN=.*\n', 'XMPP_DOMAIN=auroral.dev.bavenir.eu\n', envFile)
             envFile = re.sub(r'NODE_ENV=.*\n', 'NODE_ENV=development\n', envFile)
+            envFile = re.sub(r'NM_HOST=.*\n', 'NM_HOST='+auroral_url+'\n', envFile)
         elif configuration['env'] == 'prod':
             auroral_url = auroral_url_production
             envFile = re.sub(r'XMPP_SERVICE=.*\n', 'XMPP_SERVICE=xmpp://xmpp.auroral.bavenir.eu:5222\n', envFile)
             envFile = re.sub(r'XMPP_DOMAIN=.*\n', 'XMPP_DOMAIN=auroral.bavenir.eu\n', envFile)
             envFile = re.sub(r'NODE_ENV=.*\n', 'NODE_ENV=production\n', envFile)
+            envFile = re.sub(r'NM_HOST=.*\n', 'NM_HOST='+auroral_url+'\n', envFile)
     if 'port' in configuration:
         envFile = re.sub(r'EXTERNAL_PORT=.*\n', 'EXTERNAL_PORT=' + str(configuration['port'])+'\n', envFile)
     if 'use_shacl' in configuration:
