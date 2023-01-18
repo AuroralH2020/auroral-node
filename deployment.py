@@ -29,7 +29,8 @@ version = '0.1'
 dependensies=["docker", "docker-compose"]
 auroral_url_production="https://auroral.bavenir.eu/"
 auroral_url_development="https://auroral.dev.bavenir.eu/"
-auroral_url=''
+# default is development
+auroral_url=auroral_url_development
 
 # Parse command line arguments
 
@@ -304,13 +305,13 @@ def initialise():
             envFile = re.sub(r'XMPP_SERVICE=.*\n', 'XMPP_SERVICE=xmpp://auroral.dev.bavenir.eu:5222\n', envFile)
             envFile = re.sub(r'XMPP_DOMAIN=.*\n', 'XMPP_DOMAIN=auroral.dev.bavenir.eu\n', envFile)
             envFile = re.sub(r'NODE_ENV=.*\n', 'NODE_ENV=development\n', envFile)
-            envFile = re.sub(r'NM_HOST=.*\n', 'NM_HOST='+auroral_url+'\n', envFile)
+            envFile = re.sub(r'NM_HOST=.*\n', 'NM_HOST='+auroral_url+'api/gtw/v1/\n', envFile)
         elif configuration['env'] == 'prod':
             auroral_url = auroral_url_production
             envFile = re.sub(r'XMPP_SERVICE=.*\n', 'XMPP_SERVICE=xmpp://xmpp.auroral.bavenir.eu:5222\n', envFile)
             envFile = re.sub(r'XMPP_DOMAIN=.*\n', 'XMPP_DOMAIN=auroral.bavenir.eu\n', envFile)
             envFile = re.sub(r'NODE_ENV=.*\n', 'NODE_ENV=production\n', envFile)
-            envFile = re.sub(r'NM_HOST=.*\n', 'NM_HOST='+auroral_url+'\n', envFile)
+            envFile = re.sub(r'NM_HOST=.*\n', 'NM_HOST='+auroral_url+'api/gtw/v1/\n', envFile)
     if 'port' in configuration:
         envFile = re.sub(r'EXTERNAL_PORT=.*\n', 'EXTERNAL_PORT=' + str(configuration['port'])+'\n', envFile)
     if 'use_shacl' in configuration:
@@ -348,6 +349,9 @@ def initialise():
             # Add docker-compose extension
             os.system('docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;')  
             os.system('mv docker-compose.tmp docker-compose.yml')
+    # Process docker-compose using config command to be on same level as with extensions
+    os.system('docker-compose -f docker-compose.yml config > docker-compose.tmp;')
+    os.system('mv docker-compose.tmp docker-compose.yml')
     # Generate certificate
     pubkey = generateCertificatesGtw()
     # Send certificate to platform
@@ -419,7 +423,15 @@ except SystemExit:
 def main() -> int:
     # Check requirements
     checkRequirements()
-
+    # Check if node is already initialised
+    if checkIfInitialised():
+        global auroral_url
+        global agid
+        with open('.env', 'r') as file:
+                envFile = file.read()
+                agid = re.search('GTW_ID=(.*)', envFile).group(1)
+                auroral_url = re.search('NM_HOST=(.*)', envFile).group(1)
+                auroral_url = auroral_url.replace('api/gtw/v1/', '')[1:-1]
     # Check if backup / restore is requested
     if args.backupNode:
         backupNode()
