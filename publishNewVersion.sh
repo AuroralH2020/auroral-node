@@ -37,6 +37,6 @@ git commit -m "Updated version to ${VERSION}"
 
 # Create tag
 git tag -a ${VERSION}
-git push github --tags
+git push  --tags
 say 'Done!'
 
