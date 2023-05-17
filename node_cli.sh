@@ -60,6 +60,18 @@ getYesNOanswer () {
     esac
 done
 }
+chooseEnviroment () {
+  echoBlue ""
+  echoBlue "Select environment:"
+  # wait for answer
+  select yn in 'Production (auroral.bavenir.eu)' 'Development (auroral.dev.bavenir.eu)'; do
+    case $yn in
+        'Production (auroral.bavenir.eu)' ) return 1;break;;
+        'Development (auroral.dev.bavenir.eu)' ) return 0;break;;
+    esac
+  done
+}
+
 
 # Displays dialog and return given text in TMP 
 getTextAnswer () {
@@ -290,7 +302,7 @@ getMachine () {
       *)          machine="UNKNOWN:${unameOut}"
   esac
   MACHINE=${machine}
-  echoBlue "System running on ${MACHINE}"
+  echo "System running on ${MACHINE}"
 }
 
 # detects Machine architecture
@@ -342,7 +354,7 @@ checkIfInitialised () {
 # Removes all edited files and create clean node
 resetInstance () {
   # Removing all settings
-  echo "-r RESET AP";
+  echo "Resetting your node";
   getYesNOanswer "Are you sure you want to remove all node files?";
   if [ $? != 1 ]; then
       echo "Aborting..";
@@ -409,7 +421,9 @@ getRandomPassword;
 editEnvFile "DB_PASSWORD";
 
 # Production/Development mode
-getYesNOanswer 'Choose YES for PRODUCTION platform (auroral.bavenir.eu) \nor NO for DEVELOPMENT (auroral.DEV.bavenir.eu)' 'Work in DEVELOPMENT (2) if your product is not final';
+
+# getYesNOanswer 'Choose YES for PRODUCTION platform (auroral.bavenir.eu) \nor NO for DEVELOPMENT (auroral.DEV.bavenir.eu)' 'Work in DEVELOPMENT (2) if your product is not final';
+chooseEnviroment
 if [ $? == 1 ]; then 
   TMP="xmpp://xmpp.auroral.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
   TMP="auroral.bavenir.eu";editEnvFile "XMPP_DOMAIN";
