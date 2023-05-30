@@ -15,6 +15,7 @@ USAGE="$(basename "$0") [ -h ] [ -e env ]
       -a  Apply backup
       -b  Backup node
       -k  Regenerate keys
+      -t  Test connection to AURORAL platform
      " 
 #----------------------------------------------------------
 # Configuration
@@ -37,6 +38,10 @@ ARCH=''
 # Print text in blue color
 echoBlue () {
   echo -e "\033[1;34m$@\033[0m"
+}
+
+echoGreen () {
+  echo -e "\033[1;92m$@\033[0m"
 }
 
 # Print text in yellow color
@@ -342,6 +347,39 @@ updateImages () {
  exit
 }
 
+# test connection to XMPP servers
+testConection () {
+  servers=(
+    "XMPP DEV" "auroral.dev.bavenir.eu" "5222"
+    "XMPP PROD" "xmpp.auroral.bavenir.eu" "5222"
+    "NM DEV" "auroral.dev.bavenir.eu" "443"
+    "NM PROD" "auroral.bavenir.eu" "443"
+    "DLT1" "auroralvm.dlt.iti.gr" "433"
+    "DLT2" "auroralvm.dlt.iti.gr" "9090"
+  )
+  echoBlue "Testing XMPP connection"
+ 
+   for ((i=0; i<${#servers[@]}; i+=3)); do
+      ( 
+        if  (echo >/dev/tcp/"${servers[i+1]}/${servers[i+2]}") >/dev/null 2>&1; then
+          echoGreen "${servers[i]}(${servers[i+1]}:${servers[i+2]}) OK"
+        else
+          echoWarn "${servers[i]}(${servers[i+1]}:${servers[i+2]}) ERROR)"
+
+        fi
+      ) & pid=$!
+        (sleep 4 && kill -HUP $pid ) 2>/dev/null & watcher=$!
+        if wait $pid 2>/dev/null; then
+            # echo "your_command finished"
+            pkill -HUP -P $watcher
+            wait $watcher
+        else
+          echoWarn "${servers[i]} (${servers[i+1]}:${servers[i+2]}) TIMEOUT"
+
+        fi
+    done
+}
+
 # Test if already initialised
 checkIfInitialised () {
   if [[ -f ".env" ]]; then
@@ -374,7 +412,7 @@ resetInstance () {
 }
 
 # Get opts
-while getopts 'hirsuad:bk' OPTION; do
+while getopts 'htirsuad:bk' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
@@ -390,6 +428,8 @@ while getopts 'hirsuad:bk' OPTION; do
     b) backupAP;
        exit 0;;
     a) restoreAP;
+       exit 0;;
+    t) testConection;
        exit 0;;
   esac 
 done
