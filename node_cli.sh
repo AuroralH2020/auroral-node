@@ -15,6 +15,7 @@ USAGE="$(basename "$0") [ -h ] [ -e env ]
       -a  Apply backup
       -b  Backup node
       -k  Regenerate keys
+      -t  Test connection to AURORAL platform
      " 
 #----------------------------------------------------------
 # Configuration
@@ -39,6 +40,10 @@ echoBlue () {
   echo -e "\033[1;34m$@\033[0m"
 }
 
+echoGreen () {
+  echo -e "\033[1;92m$@\033[0m"
+}
+
 # Print text in yellow color
 echoWarn () {
   echo -e "\033[1;31m$@\033[0m"
@@ -60,6 +65,18 @@ getYesNOanswer () {
     esac
 done
 }
+chooseEnviroment () {
+  echoBlue ""
+  echoBlue "Select environment:"
+  # wait for answer
+  select yn in 'Production (auroral.bavenir.eu)' 'Development (auroral.dev.bavenir.eu)'; do
+    case $yn in
+        'Production (auroral.bavenir.eu)' ) return 1;break;;
+        'Development (auroral.dev.bavenir.eu)' ) return 0;break;;
+    esac
+  done
+}
+
 
 # Displays dialog and return given text in TMP 
 getTextAnswer () {
@@ -290,7 +307,7 @@ getMachine () {
       *)          machine="UNKNOWN:${unameOut}"
   esac
   MACHINE=${machine}
-  echoBlue "System running on ${MACHINE}"
+  echo "System running on ${MACHINE}"
 }
 
 # detects Machine architecture
@@ -330,6 +347,39 @@ updateImages () {
  exit
 }
 
+# test connection to XMPP servers
+testConection () {
+  servers=(
+    "XMPP DEV" "auroral.dev.bavenir.eu" "5222"
+    "XMPP PROD" "xmpp.auroral.bavenir.eu" "5222"
+    "NM DEV" "auroral.dev.bavenir.eu" "443"
+    "NM PROD" "auroral.bavenir.eu" "443"
+    "DLT1" "auroralvm.dlt.iti.gr" "433"
+    "DLT2" "auroralvm.dlt.iti.gr" "9090"
+  )
+  echoBlue "Testing XMPP connection"
+ 
+   for ((i=0; i<${#servers[@]}; i+=3)); do
+      ( 
+        if  (echo >/dev/tcp/"${servers[i+1]}/${servers[i+2]}") >/dev/null 2>&1; then
+          echoGreen "${servers[i]}(${servers[i+1]}:${servers[i+2]}) OK"
+        else
+          echoWarn "${servers[i]}(${servers[i+1]}:${servers[i+2]}) ERROR)"
+
+        fi
+      ) & pid=$!
+        (sleep 4 && kill -HUP $pid ) 2>/dev/null & watcher=$!
+        if wait $pid 2>/dev/null; then
+            # echo "your_command finished"
+            pkill -HUP -P $watcher
+            wait $watcher
+        else
+          echoWarn "${servers[i]} (${servers[i+1]}:${servers[i+2]}) TIMEOUT"
+
+        fi
+    done
+}
+
 # Test if already initialised
 checkIfInitialised () {
   if [[ -f ".env" ]]; then
@@ -342,7 +392,7 @@ checkIfInitialised () {
 # Removes all edited files and create clean node
 resetInstance () {
   # Removing all settings
-  echo "-r RESET AP";
+  echo "Resetting your node";
   getYesNOanswer "Are you sure you want to remove all node files?";
   if [ $? != 1 ]; then
       echo "Aborting..";
@@ -362,7 +412,7 @@ resetInstance () {
 }
 
 # Get opts
-while getopts 'hirsuad:bk' OPTION; do
+while getopts 'htirsuad:bk' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
@@ -378,6 +428,8 @@ while getopts 'hirsuad:bk' OPTION; do
     b) backupAP;
        exit 0;;
     a) restoreAP;
+       exit 0;;
+    t) testConection;
        exit 0;;
   esac 
 done
@@ -409,7 +461,9 @@ getRandomPassword;
 editEnvFile "DB_PASSWORD";
 
 # Production/Development mode
-getYesNOanswer 'Choose YES for PRODUCTION platform (auroral.bavenir.eu) \nor NO for DEVELOPMENT (auroral.DEV.bavenir.eu)' 'Work in DEVELOPMENT (2) if your product is not final';
+
+# getYesNOanswer 'Choose YES for PRODUCTION platform (auroral.bavenir.eu) \nor NO for DEVELOPMENT (auroral.DEV.bavenir.eu)' 'Work in DEVELOPMENT (2) if your product is not final';
+chooseEnviroment
 if [ $? == 1 ]; then 
   TMP="xmpp://xmpp.auroral.bavenir.eu:5222";editEnvFile "XMPP_SERVICE";
   TMP="auroral.bavenir.eu";editEnvFile "XMPP_DOMAIN";
