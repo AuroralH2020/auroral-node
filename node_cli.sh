@@ -354,7 +354,7 @@ testConection () {
     "XMPP PROD" "xmpp.auroral.bavenir.eu" "5222"
     "NM DEV" "auroral.dev.bavenir.eu" "443"
     "NM PROD" "auroral.bavenir.eu" "443"
-    "DLT1" "auroralvm.dlt.iti.gr" "433"
+    "DLT1" "auroralvm.dlt.iti.gr" "443"
     "DLT2" "auroralvm.dlt.iti.gr" "9090"
   )
   echoBlue "Testing XMPP connection"
