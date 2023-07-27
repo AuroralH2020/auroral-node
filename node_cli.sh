@@ -16,6 +16,7 @@ USAGE="$(basename "$0") [ -h ] [ -e env ]
       -b  Backup node
       -k  Regenerate keys
       -t  Test connection to AURORAL platform
+      -v  Validation mode (SHACL temporary enabled)
      " 
 #----------------------------------------------------------
 # Configuration
@@ -196,17 +197,30 @@ fillGatewayConfig () {
 startAP () {
   if [ $DAEMON == "0" ]; then
     echoBlue "Starting Node (-d)"
-      docker-compose up -d
+      docker-compose up -d -d --remove-orphans
     else
     echoBlue "Starting Node"
-     docker-compose up
+     docker-compose up -d --remove-orphans
     fi
+}
+
+# StartAP + SHACL validation
+validationEnabled () {
+  if [ $DAEMON == "0" ]; then
+    echoBlue "Starting Node with SHACL validation (-d)"
+      docker-compose up -d --remove-orphans
+    else
+    echoBlue "Starting Node with SHACL validation"
+     docker-compose up --remove-orphans
+    fi
+  docker-compose -f docker-compose.yml -f extensions/shacl-compose.yml up
+
 }
 
 # Stops the APP with docker-compose
 stopAP () {
   echoBlue 'Stopping' 
-  docker-compose down
+  docker-compose down  --remove-orphans
 }
 
 askAndStartAP() {
@@ -412,7 +426,7 @@ resetInstance () {
 }
 
 # Get opts
-while getopts 'htirsuad:bk' OPTION; do
+while getopts 'htirsuavd:bk' OPTION; do
   case "$OPTION" in 
     h) echo "$USAGE";
        exit 0;;
@@ -428,6 +442,8 @@ while getopts 'htirsuad:bk' OPTION; do
     b) backupAP;
        exit 0;;
     a) restoreAP;
+       exit 0;;
+    v) validationEnabled;
        exit 0;;
     t) testConection;
        exit 0;;
