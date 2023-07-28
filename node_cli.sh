@@ -517,7 +517,6 @@ mv docker-compose.tmp docker-compose.yml
 getExtensionSelection 'Install extension?';
 if [ $TMP == node-red ]; then 
   # NODE-RED
-  cp docker-compose.yml docker-compose.backup
   docker-compose -f docker-compose.yml -f extensions/node-red-compose.yml config > docker-compose.tmp;
   mv docker-compose.tmp docker-compose.yml
   TMP='proxy';  editEnvFile "ADAPTER_MODE";
@@ -528,7 +527,6 @@ if [ $TMP == node-red ]; then
 elif [ $TMP == helio ]; then  
   # HELIO
   echo 'HELIO';
-  cp docker-compose.yml docker-compose.backup
   docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;
   mv docker-compose.tmp docker-compose.yml
   TMP='semantic';  editEnvFile "ADAPTER_MODE";
