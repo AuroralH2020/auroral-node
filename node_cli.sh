@@ -26,6 +26,7 @@ ENV_BACKUP="env.edit"
 AURORAL_NM_URL="https://auroral.dev.bavenir.eu/nm/#!/myNodes"
 AURORAL_NM_URL_PRODUCTION="https://auroral.bavenir.eu/nm/#!/myNodes"
 DEPENDENCIES=("docker" "docker-compose" "perl" )
+BACKED_UP_CONTAINERS="auroral-agent cache-db gateway triplestore"
 AGID=""
 TMP=""
 DAEMON=0
@@ -224,7 +225,8 @@ backupAP () {
   echoBlue 'Starting NODE' 
   # ensure containers are created
   docker-compose up --no-start 
-  CONTAINERS=$(docker-compose ps --all -q)
+  # use variable BACKED_UP_CONTAINERS
+  CONTAINERS=$(docker-compose ps  --all $BACKED_UP_CONTAINERS -q)
   VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
   # TODO redis, gateway, triplestore + env
   docker run --rm -ti  $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar cvf /backup/node_backup.tar /data /gateway/persistance /fuseki /backup/.env /backup/docker-compose*'
@@ -241,7 +243,7 @@ restoreAP () {
   # create containers 
   docker-compose up --no-start
   # get containers IDs
-  CONTAINERS=$(docker-compose ps -q --all)
+  CONTAINERS=$(docker-compose ps  --all $BACKED_UP_CONTAINERS -q)
   VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
   #restore backup
   docker run --rm -ti $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar -xvf /backup/node_backup.tar '
