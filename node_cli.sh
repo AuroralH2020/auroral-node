@@ -26,6 +26,7 @@ ENV_BACKUP="env.edit"
 AURORAL_NM_URL="https://auroral.dev.bavenir.eu/nm/#!/myNodes"
 AURORAL_NM_URL_PRODUCTION="https://auroral.bavenir.eu/nm/#!/myNodes"
 DEPENDENCIES=("docker" "docker-compose" "perl" )
+BACKED_UP_CONTAINERS="auroral-agent cache-db gateway triplestore"
 AGID=""
 TMP=""
 DAEMON=0
@@ -224,10 +225,11 @@ backupAP () {
   echoBlue 'Starting NODE' 
   # ensure containers are created
   docker-compose up --no-start 
-  CONTAINERS=$(docker-compose ps -q)
+  # use variable BACKED_UP_CONTAINERS
+  CONTAINERS=$(docker-compose ps  --all $BACKED_UP_CONTAINERS -q)
   VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
   # TODO redis, gateway, triplestore + env
-  docker run --rm -ti  $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar cvf /backup/node_backup.tar /data /gateway/persistance /fuseki /backup/.env'
+  docker run --rm -ti  $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar cvf /backup/node_backup.tar /data /gateway/persistance /fuseki /backup/.env /backup/docker-compose*'
   echoBlue 'Stopping NODE' 
   stopAP
   echoBlue 'Done' 
@@ -236,15 +238,18 @@ backupAP () {
 
 restoreAP () {
   echo "RestoreAP"
-  #Copy env file
-  cp $ENV_EXAMPLE $ENV_FILE
+# run ubuntu container and extract .env + docker-compose.yml
+  docker run --rm -ti -v $(pwd):/backup ubuntu /bin/bash -c 'tar --extract --file=/backup/node_backup.tar  backup/'
   # create containers 
   docker-compose up --no-start
   # get containers IDs
-  CONTAINERS=$(docker-compose ps -q)
+  CONTAINERS=$(docker-compose ps  --all $BACKED_UP_CONTAINERS -q)
   VOLUMES=$(echo -e "${CONTAINERS}" | perl -pe 's/^/ --volumes-from /g' | perl -pe 's/\n/ /g') 
   #restore backup
   docker run --rm -ti $(echo $VOLUMES) -v $(pwd):/backup ubuntu /bin/bash -c 'tar -xvf /backup/node_backup.tar '
+  # set project name again  
+  TMP=$PROJECT_NAME;
+  editEnvFile "COMPOSE_PROJECT_NAME";
   echoBlue 'Done' 
   echoBlue 'Stopping NODE' 
   stopAP
@@ -252,6 +257,11 @@ restoreAP () {
 
 # Regenerate certificates
 regenerateCertificates() {
+  checkIfInitialised
+  if [ $? == 0 ]; then
+    echoWarn "Node is not initialised. Please run without -k parameter"
+    exit
+  fi
   stopAP
   echoBlue 'Regenerating keys'
   generateCertificates
@@ -343,7 +353,6 @@ updateImages () {
   fi
  echoBlue "Updating images"
  docker-compose pull
- askAndStartAP
  exit
 }
 
@@ -354,7 +363,7 @@ testConection () {
     "XMPP PROD" "xmpp.auroral.bavenir.eu" "5222"
     "NM DEV" "auroral.dev.bavenir.eu" "443"
     "NM PROD" "auroral.bavenir.eu" "443"
-    "DLT1" "auroralvm.dlt.iti.gr" "433"
+    "DLT1" "auroralvm.dlt.iti.gr" "443"
     "DLT2" "auroralvm.dlt.iti.gr" "9090"
   )
   echoBlue "Testing XMPP connection"
@@ -387,6 +396,14 @@ checkIfInitialised () {
     # echoBlue "If you want to reset initialisation, run with -r parameter"
   fi
   return 0
+}
+
+setProjectName () {
+  echo "Setting project name"
+  # Add random string to name the container
+  RND_STR=$(date +%s | head -c 10)
+  TMP="aur-$RND_STR"; 
+  editEnvFile "COMPOSE_PROJECT_NAME"; 
 }
 
 # Removes all edited files and create clean node
@@ -456,10 +473,7 @@ getArch
 # Create .env file
 cp $ENV_EXAMPLE $ENV_FILE
 
-# Add random string to name the container
-RND_STR=$(date +%s | head -c 10)
-TMP="aur-$RND_STR"; 
-editEnvFile "COMPOSE_PROJECT_NAME"; 
+setProjectName
 
 # Generate password for REDIS
 getRandomPassword;
@@ -494,12 +508,15 @@ if [ $? == 0 ]; then
   getTextAnswer "Please specify the external port:" "";
   editEnvFile "EXTERNAL_PORT";
 fi;
+# to have everything same even if no extension is installed
+cp docker-compose.yml docker-compose.backup
+docker-compose -f docker-compose.yml config > docker-compose.tmp;
+mv docker-compose.tmp docker-compose.yml
 
 # Install adapter extension
 getExtensionSelection 'Install extension?';
 if [ $TMP == node-red ]; then 
   # NODE-RED
-  cp docker-compose.yml docker-compose.backup
   docker-compose -f docker-compose.yml -f extensions/node-red-compose.yml config > docker-compose.tmp;
   mv docker-compose.tmp docker-compose.yml
   TMP='proxy';  editEnvFile "ADAPTER_MODE";
@@ -510,7 +527,6 @@ if [ $TMP == node-red ]; then
 elif [ $TMP == helio ]; then  
   # HELIO
   echo 'HELIO';
-  cp docker-compose.yml docker-compose.backup
   docker-compose -f docker-compose.yml -f extensions/helio-compose.yml config > docker-compose.tmp;
   mv docker-compose.tmp docker-compose.yml
   TMP='semantic';  editEnvFile "ADAPTER_MODE";
