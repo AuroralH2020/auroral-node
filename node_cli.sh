@@ -456,6 +456,11 @@ getArch
 # Create .env file
 cp $ENV_EXAMPLE $ENV_FILE
 
+# Add random string to name the container
+RND_STR=$(date +%s | head -c 10)
+TMP="aur-$RND_STR"; 
+editEnvFile "COMPOSE_PROJECT_NAME"; 
+
 # Generate password for REDIS
 getRandomPassword;
 editEnvFile "DB_PASSWORD";
@@ -537,12 +542,12 @@ fi
 # Node agid + pasword
 echo "Now please register new Node in AURORAL website: $AURORAL_NM_URL, in section 'Access points'"
 getTextAnswer "Please insert generated AGID:" "36"; 
-AGID=$TMP; editEnvFile "GTW_ID";
-TMP="aur-node_${TMP:0:8}"; editEnvFile "COMPOSE_PROJECT_NAME"; 
-getTextPasswordAnswer ; editEnvFile "GTW_PWD" 
-
-# Fill GatewayConfig.xml
-# fillGatewayConfig $AGID
+AGID=$TMP; 
+editEnvFile "GTW_ID";
+# TMP="aur-${TMP:0:8}"; 
+# editEnvFile "COMPOSE_PROJECT_NAME"; 
+getTextPasswordAnswer; 
+editEnvFile "GTW_PWD" 
 
 # Genereate certificates
 generateCertificates
