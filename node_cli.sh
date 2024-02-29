@@ -211,6 +211,7 @@ stopAP () {
 }
 
 askAndStartAP() {
+  updateImagesSilent
   getYesNOanswer 'Run Node now?' ;
   if [ $? == "1" ]; then
   startAP
@@ -348,12 +349,19 @@ updateImages () {
   checkIfRunning
   if [ $? == 1 ]; then 
     stopAP
-  else 
-    echo "node offline"
   fi
  echoBlue "Updating images"
  docker-compose pull
- exit
+}
+
+# Update images without logging
+updateImagesSilent () {
+  checkIfRunning
+  if [ $? == 1 ]; then 
+    stopAP
+  fi
+  echoBlue "Updating images"
+  docker compose --env-file env.example pull --quiet > /dev/null 2>&1
 }
 
 # test connection to XMPP servers
