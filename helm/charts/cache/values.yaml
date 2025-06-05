@@ -1,0 +1,38 @@
+# Default values for cache.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: redis
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "6.2.6-buster"
+
+command: 
+  - "bash"
+  - "-c"
+  - "docker-entrypoint.sh --requirepass '<DB_PWD>' --bind '0.0.0.0'"
+
+service:
+  port: 6379
+
+livenessProbe:
+  exec:
+    command:
+    - redis-cli
+    - ping
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+volume:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cache.fullname" . }}
+  labels:
+    {{- include "cache.labels" . | nindent 4 }}
+spec:
+  replicas:  {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cache.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cache.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        {{- with .Values.command }}
+        command: 
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+        ports:
+        - name: http 
+          containerPort: {{ .Values.service.port }}
+          protocol: TCP
+        {{- with .Values.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+        volumeMounts:
+        - name: {{ include "cache.fullname" . }}
+          mountPath: /data
+          subPath: {{ include "cache.fullname" . }}
+      volumes:
+        - name: {{ include "cache.fullname" . }}
+          persistentVolumeClaim:
+            claimName: {{ include "cache.fullname" . }}-pvc

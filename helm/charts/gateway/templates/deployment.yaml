@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gateway.fullname" . }}
+  labels:
+    {{- include "gateway.labels" . | nindent 4 }}
+spec:
+  replicas:  {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gateway.labels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: init-keystore
+          image: alpine/openssl:latest
+          command: ["/bin/sh", "-c"]
+          args: 
+            - openssl genrsa -out /gateway/persistance/keystore/gateway-key.pem 2048;
+              chmod 644 /gateway/persistance/keystore/gateway-key.pem;
+              openssl pkcs8 -topk8 -inform PEM -outform DER -in /gateway/persistance/keystore/gateway-key.pem -out /gateway/persistance/keystore/gateway-key.der -nocrypt;
+              openssl rsa -in /gateway/persistance/keystore/gateway-key.pem -pubout -outform DER -out /gateway/persistance/keystore/gateway-pubkey.der;
+              openssl rsa -in /gateway/persistance/keystore/gateway-key.pem -pubout -outform PEM -out /gateway/persistance/keystore/gateway-pubkey.pem;
+              cat /gateway/persistance/keystore/gateway-pubkey.pem;
+          volumeMounts:
+            - name: {{ include "gateway.fullname" . }}
+              mountPath: /gateway/persistance/keystore
+              subPath: {{ include "gateway.fullname" . }}
+              readOnly: false
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        {{- with .Values.env }}
+        env:
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+        ports:
+        - name: http 
+          containerPort: {{ .Values.service.port }}
+          protocol: TCP
+        volumeMounts:
+        - name: {{ include "gateway.fullname" . }}
+          mountPath: /gateway/persistance/keystore
+          subPath: {{ include "gateway.fullname" . }}
+      volumes:
+        - name: {{ include "gateway.fullname" . }}
+          persistentVolumeClaim:
+            claimName: {{ include "gateway.fullname" . }}-pvc
+

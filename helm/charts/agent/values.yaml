@@ -1,0 +1,88 @@
+# Default values for agent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+image:
+  repository: ghcr.io/auroralh2020/auroral-node-agent
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+service:
+  port: 4000
+
+livenessProbe:
+  exec:
+    command:
+    - node
+    - healthcheck.js
+  initialDelaySeconds: 15
+  periodSeconds: 15
+  timeoutSeconds: 15
+  failureThreshold: 10
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: IP
+    value: "0.0.0.0"
+  - name: PORT
+    value: "4000"
+  - name: EXTERNAL_PORT
+    value: "81"
+  - name: GTW_HOST
+    value: "http://auroral-gateway"
+  - name: GTW_PORT
+    value: "8181"
+  - name: GTW_TIMEOUT
+    value: "10000"
+  - name: GTW_ID
+    value: "<GTW_ID>"
+  - name: GTW_PWD
+    value: "<GTW_PWD>"
+  - name: DB_PASSWORD
+    value: "<DB_PASSWORD>"
+  - name: DB_HOST
+    value: "auroral-cache"
+  - name: DB_PORT
+    value: "6379"
+  - name: DB_CACHE_ENABLED
+    value: "false"
+  - name: DB_CACHE_TTL
+    value: "60"
+  - name: WOT_ENABLED
+    value: "true"
+  - name: WOT_HOST
+    value: "http://auroral-wothive"
+  - name: WOT_PORT
+    value: "9000"
+  - name: ADAPTER_MODE
+    value: "dummy"
+  - name: ADAPTER_HOST
+    value: "http://adapter"
+  - name: ADAPTER_PORT
+    value: "3001"
+  - name: USE_MAPPING
+    value: "true"
+  - name: SEMANTIC_ODRL_ENABLED
+    value: "false"
+  - name: SEMANTIC_SHACL_ENABLED
+    value: "false"
+  - name: XMPP_ENVIRONMENT
+    value: "auroral"
+  - name: XMPP_SERVICE
+    value: "xmpp://xmpp.auroral.bavenir.eu:5222"
+  - name: XMPP_DOMAIN
+    value: "auroral.bavenir.eu"
+  - name: XMPP_RESOURCE
+    value: "AuroralNode"
+  - name: NM_HOST
+    value: "https://auroral.bavenir.eu/api/gtw/v1/"
+  - name: EVENT_SETTINGS_FILE
+    value: "persistance/events.json"
+  - name: GTW_TOKEN_TTL
+    value: "86400"

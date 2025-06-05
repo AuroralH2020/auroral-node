@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+    name: {{ include "gateway.fullname" . }}-pv
+{{- with .Values.volume }}
+spec:
+    {{- toYaml . | nindent 2 }}
+{{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: {{ include "gateway.fullname" . }}-pvc
+spec:
+    accessModes:
+        {{ .Values.volume.accessModes }}
+    resources:
+        requests:
+            storage: {{ .Values.volume.capacity.storage | quote }}
